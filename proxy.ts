@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
     }
 
     return NextResponse.next();
-  } catch (error) {
+  } catch {
     // If token invalid, clear it and redirect to login
     const response = NextResponse.redirect(new URL("/login", request.url));
     response.cookies.delete("poker_session");

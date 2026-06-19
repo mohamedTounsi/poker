@@ -4,6 +4,12 @@ export interface IUser extends Document {
   username: string;
   password?: string;
   role: "admin" | "player";
+  avatarUrl?: string;
+  medals: {
+    gold: number;
+    silver: number;
+    bronze: number;
+  };
   createdAt: Date;
 }
 
@@ -24,6 +30,15 @@ const UserSchema: Schema = new Schema(
       type: String,
       enum: ["admin", "player"],
       default: "player",
+    },
+    avatarUrl: {
+      type: String,
+      default: null,
+    },
+    medals: {
+      gold: { type: Number, default: 0 },
+      silver: { type: Number, default: 0 },
+      bronze: { type: Number, default: 0 },
     },
   },
   {

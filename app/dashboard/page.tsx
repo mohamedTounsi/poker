@@ -17,38 +17,38 @@ export default async function DashboardPage() {
   await connectToDatabase();
 
   let players: any[] = [];
-  let balances: Record<string, number> = {};
+  const balances: Record<string, number> = {};
   let activeGame: any = null;
   let historyGames: any[] = [];
+  const avatarMap: Record<string, string | null> = {};
 
   // Player Dashboard Data
   let myGames: any[] = [];
-  let myStats = {
+  const myStats = {
     netBalance: 0,
     gamesPlayed: 0,
     wins: 0,
     losses: 0,
   };
+  let myUser: any = null;
+  let navNetBalance = 0;
 
   if (currentUser.role === "admin") {
-    // Admin needs all players to show standings and start games
     const users = await User.find({ role: "player" }).sort({ username: 1 });
     players = JSON.parse(JSON.stringify(users));
 
-    // Active game (if any)
+    // Build avatar map
+    players.forEach((p) => {
+      avatarMap[p.username] = p.avatarUrl || null;
+    });
+
     const active = await Game.findOne({ status: "active" });
     activeGame = active ? JSON.parse(JSON.stringify(active)) : null;
 
-    // Completed games for history summary
     const completed = await Game.find({ status: "completed" }).sort({ date: -1 });
     historyGames = JSON.parse(JSON.stringify(completed));
 
-    // Initialize all player balances to 0
-    players.forEach((p) => {
-      balances[p.username] = 0;
-    });
-
-    // Sum up player balances across all completed games
+    players.forEach((p) => { balances[p.username] = 0; });
     historyGames.forEach((game) => {
       game.players.forEach((p: any) => {
         if (balances[p.username] !== undefined) {
@@ -59,7 +59,10 @@ export default async function DashboardPage() {
       });
     });
   } else {
-    // Player needs their own statistics and match history
+    // Fetch current player's full user doc
+    myUser = await User.findById(currentUser.userId).lean();
+    myUser = JSON.parse(JSON.stringify(myUser));
+
     const completed = await Game.find({
       status: "completed",
       "players.username": currentUser.username,
@@ -67,48 +70,56 @@ export default async function DashboardPage() {
 
     myGames = JSON.parse(JSON.stringify(completed));
 
-    // Calculate player stats
     myStats.gamesPlayed = myGames.length;
     myGames.forEach((game) => {
       const entry = game.players.find((p: any) => p.username === currentUser.username);
       if (entry) {
         myStats.netBalance += entry.score;
-        if (entry.score > 0) {
-          myStats.wins += 1;
-        } else if (entry.score < 0) {
-          myStats.losses += 1;
-        }
+        if (entry.score > 0) myStats.wins += 1;
+        else if (entry.score < 0) myStats.losses += 1;
       }
     });
+    navNetBalance = myStats.netBalance;
   }
 
-  return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-950 dark:text-zinc-50 flex flex-col transition-colors duration-200">
-      <Navbar user={currentUser} />
+  const navUser = {
+    username: currentUser.username,
+    role: currentUser.role,
+    avatarUrl: myUser?.avatarUrl || null,
+    netBalance: navNetBalance,
+  };
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-zinc-200 dark:border-zinc-850 pb-6 mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-white capitalize">
-              Welcome back, {currentUser.username}!
-            </h1>
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1.5 font-medium">
-              Here is your poker tracking overview for tonight.
-            </p>
-          </div>
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: "#0a0e1a" }}>
+      <Navbar user={navUser} />
+
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1
+            className="text-2xl sm:text-3xl font-black text-white tracking-wider"
+            style={{ fontFamily: "var(--font-orbitron)" }}
+          >
+            {currentUser.role === "admin" ? "COMMAND CENTER" : "MY PROFILE"}
+          </h1>
+          <p className="text-zinc-500 text-sm mt-1.5 font-medium" style={{ fontFamily: "var(--font-rajdhani)" }}>
+            {currentUser.role === "admin"
+              ? "Manage players, start games, and view global standings"
+              : `Welcome back, ${currentUser.username}! Here's your poker profile.`}
+          </p>
         </div>
 
         {currentUser.role === "admin" ? (
           <AdminDashboard
-            currentUser={currentUser}
             players={players}
             balances={balances}
             activeGame={activeGame}
-            historyGames={historyGames}
+            avatarMap={avatarMap}
           />
         ) : (
           <PlayerDashboard
             currentUser={currentUser}
+            myUser={myUser}
             myGames={myGames}
             myStats={myStats}
           />

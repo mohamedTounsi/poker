@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Rajdhani, Orbitron } from "next/font/google";
 import ThemeInitializer from "../components/ThemeInitializer";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const rajdhani = Rajdhani({
+  variable: "--font-rajdhani",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const orbitron = Orbitron({
+  variable: "--font-orbitron",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
-  title: "Poker Tracker - Settle Game Scores",
-  description: "Track poker gameplays, borrow/lend histories, and balances with friends.",
+  title: "PokerZone — Track. Rank. Dominate.",
+  description: "Track poker gameplays, climb the leaderboard, earn medals and unlock ranks with friends.",
 };
 
 export default function RootLayout({
@@ -26,11 +28,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${rajdhani.variable} ${orbitron.variable} h-full antialiased dark`}
       suppressHydrationWarning
     >
       <head />
-      <body className="min-h-full flex flex-col transition-colors duration-250 bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+      <body className="min-h-full flex flex-col bg-[#0a0e1a] text-zinc-100">
         <ThemeInitializer />
         {children}
       </body>

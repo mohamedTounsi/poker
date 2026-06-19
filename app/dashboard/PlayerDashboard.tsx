@@ -1,12 +1,17 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { changePasswordAction } from "../actions";
 import { formatTnd } from "../../lib/utils";
-import { Key, History, TrendingUp, TrendingDown, Award, Calendar, Loader2, ShieldCheck } from "lucide-react";
+import { getRankInfo } from "../../lib/rankUtils";
+import { Key, TrendingUp, TrendingDown, Award, Loader2, ShieldCheck, Camera, ChevronDown, ChevronUp } from "lucide-react";
+import PlayerAvatar from "../../components/PlayerAvatar";
+import RankBadge from "../../components/RankBadge";
+import PerformanceChart from "../../components/PerformanceChart";
 
 interface PlayerDashboardProps {
   currentUser: { username: string };
+  myUser: any;
   myGames: any[];
   myStats: {
     netBalance: number;
@@ -18,210 +23,438 @@ interface PlayerDashboardProps {
 
 export default function PlayerDashboard({
   currentUser,
+  myUser,
   myGames,
   myStats,
 }: PlayerDashboardProps) {
-  // Password change state
   const [passwordState, passwordFormAction, isPasswordPending] = useActionState(
     changePasswordAction,
     null
   );
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(myUser?.avatarUrl || null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Expandable match history
+  const [expandedGame, setExpandedGame] = useState<string | null>(null);
+
+  const rank = getRankInfo(myStats.netBalance);
+
+
+  const chartData = (() => {
+    let running = 0;
+    const result = [];
+    const reversedGames = [...myGames].reverse();
+    for (let i = 0; i < reversedGames.length; i++) {
+      const game = reversedGames[i];
+      const entry = game.players.find((p: any) => p.username === currentUser.username);
+      running += entry?.score || 0;
+      result.push({
+        label: `G${i + 1}`,
+        balance: running,
+        date: new Date(game.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      });
+    }
+    return result;
+  })();
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("File too large. Max 5MB.");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload-avatar", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        setUploadError(data.error);
+      } else {
+        setAvatarUrl(data.url);
+      }
+    } catch {
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Quick Stats Grid - styled like playing cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Net Balance Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-all duration-200">
-          <div className="absolute top-2 left-2 text-xs font-bold text-red-650 dark:text-red-500 select-none">♥</div>
-          <div className="absolute bottom-2 right-2 text-xs font-bold text-red-650 dark:text-red-500 select-none rotate-180">♥</div>
-          
-          <p className="text-zinc-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider text-center">Net Balance</p>
-          <h3 className={`text-2xl font-black font-mono mt-3 text-center ${
-            myStats.netBalance > 0
-              ? "text-emerald-600 dark:text-emerald-450"
-              : myStats.netBalance < 0
-              ? "text-red-600 dark:text-red-500"
-              : "text-zinc-500"
-          }`}>
-            {formatTnd(myStats.netBalance)}
-          </h3>
-          <p className="text-[10px] text-zinc-450 text-center mt-1.5 font-medium">Overall profits / losses</p>
+    <div className="space-y-6">
+      {/* Profile Card + Rank */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Profile Identity */}
+        <div className="game-card p-6 flex flex-col items-center gap-4 text-center">
+          {/* Avatar upload */}
+          <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            <PlayerAvatar
+              username={currentUser.username}
+              avatarUrl={avatarUrl}
+              size="xxl"
+              showRing={true}
+              ringColor={rank.glowColor.replace(/,[\d.]+\)/, ", 1)").replace("rgba", "rgb")}
+            />
+            <div
+              className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              style={{ background: "rgba(0,0,0,0.55)" }}
+            >
+              {isUploading ? (
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+              ) : (
+                <Camera className="w-5 h-5 text-white" />
+              )}
+            </div>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarUpload}
+          />
+          {uploadError && (
+            <p className="text-xs text-red-400 font-bold">{uploadError}</p>
+          )}
+
+          <div>
+            <h2
+              className="text-xl font-black text-white capitalize"
+              style={{ fontFamily: "var(--font-orbitron)" }}
+            >
+              {currentUser.username}
+            </h2>
+            <p className="text-xs text-zinc-500 font-medium mt-0.5">Click avatar to change photo</p>
+          </div>
+
+          {/* Rank Badge with Progress */}
+          <div className="w-full">
+            <RankBadge netBalance={myStats.netBalance} showProgress={true} size="lg" />
+          </div>
+
+
         </div>
 
-        {/* Games Played Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-all duration-200">
-          <div className="absolute top-2 left-2 text-xs font-bold text-zinc-950 dark:text-white select-none">♠</div>
-          <div className="absolute bottom-2 right-2 text-xs font-bold text-zinc-950 dark:text-white select-none rotate-180">♠</div>
+        {/* Stats + Chart */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Stats row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              {
+                label: "Net Balance",
+                value: formatTnd(myStats.netBalance),
+                icon: myStats.netBalance >= 0 ? TrendingUp : TrendingDown,
+                color: myStats.netBalance > 0 ? "#10b981" : myStats.netBalance < 0 ? "#ef4444" : "#6b7a99",
+                suit: "♥",
+              },
+              {
+                label: "Games Played",
+                value: myStats.gamesPlayed,
+                icon: Award,
+                color: "#f5c518",
+                suit: "♠",
+              },
+              {
+                label: "Wins",
+                value: myStats.wins,
+                icon: TrendingUp,
+                color: "#10b981",
+                suit: "♦",
+              },
+              {
+                label: "Losses",
+                value: myStats.losses,
+                icon: TrendingDown,
+                color: "#ef4444",
+                suit: "♣",
+              },
+            ].map(({ label, value, color, suit }) => (
+              <div
+                key={label}
+                className="relative game-card p-4 text-center overflow-hidden"
+              >
+                <div className="absolute top-2 left-2 text-xs font-bold select-none opacity-30" style={{ color }}>
+                  {suit}
+                </div>
+                <div className="absolute bottom-2 right-2 text-xs font-bold select-none opacity-30 rotate-180" style={{ color }}>
+                  {suit}
+                </div>
+                <p className="text-xs font-bold tracking-widest uppercase text-zinc-500 mb-2"
+                  style={{ fontFamily: "var(--font-rajdhani)" }}>
+                  {label}
+                </p>
+                <p
+                  className="text-2xl font-black font-mono"
+                  style={{ color, fontFamily: "var(--font-orbitron)" }}
+                >
+                  {typeof value === "number" && label === "Net Balance"
+                    ? (myStats.netBalance > 0 ? "+" : "") + value
+                    : value}
+                </p>
+              </div>
+            ))}
+          </div>
 
-          <p className="text-zinc-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider text-center">Games Played</p>
-          <h3 className="text-2xl font-black text-zinc-950 dark:text-white mt-3 text-center font-mono">
-            {myStats.gamesPlayed}
-          </h3>
-          <p className="text-[10px] text-zinc-450 text-center mt-1.5 font-medium">Total game nights</p>
-        </div>
-
-        {/* Wins Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-all duration-200">
-          <div className="absolute top-2 left-2 text-xs font-bold text-red-650 dark:text-red-500 select-none">♦</div>
-          <div className="absolute bottom-2 right-2 text-xs font-bold text-red-650 dark:text-red-500 select-none rotate-180">♦</div>
-
-          <p className="text-emerald-650 dark:text-emerald-450 text-xs font-bold uppercase tracking-wider text-center">Wins</p>
-          <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-3 text-center font-mono">
-            {myStats.wins}
-          </h3>
-          <p className="text-[10px] text-zinc-450 text-center mt-1.5 font-medium">Lobbies closed in profit (+)</p>
-        </div>
-
-        {/* Losses Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm relative overflow-hidden transition-all duration-200">
-          <div className="absolute top-2 left-2 text-xs font-bold text-zinc-950 dark:text-white select-none">♣</div>
-          <div className="absolute bottom-2 right-2 text-xs font-bold text-zinc-950 dark:text-white select-none rotate-180">♣</div>
-
-          <p className="text-red-650 dark:text-red-500 text-xs font-bold uppercase tracking-wider text-center">Losses</p>
-          <h3 className="text-2xl font-black text-red-600 dark:text-red-500 mt-3 text-center font-mono">
-            {myStats.losses}
-          </h3>
-          <p className="text-[10px] text-zinc-450 text-center mt-1.5 font-medium">Lobbies closed in loss (-)</p>
+          {/* Performance chart */}
+          <div className="game-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-4 h-4 text-yellow-400" />
+              <span
+                className="text-xs font-black tracking-widest uppercase text-zinc-400"
+                style={{ fontFamily: "var(--font-rajdhani)" }}
+              >
+                Balance Curve
+              </span>
+            </div>
+            <PerformanceChart data={chartData} height={160} />
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Personal Match History (Takes 2 columns) */}
-        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500/10 text-red-650 dark:text-red-500 rounded-lg">
-              <History className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-zinc-950 dark:text-white">Your Match History</h2>
-              <p className="text-zinc-550 dark:text-zinc-405 text-sm font-medium">Detailed logs of games you participated in</p>
-            </div>
+      {/* Match History (expandable cards) */}
+      <div className="game-card p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div
+            className="p-2.5 rounded-xl"
+            style={{ background: "rgba(245,197,24,0.1)", border: "1px solid rgba(245,197,24,0.2)" }}
+          >
+            <Award className="w-5 h-5 text-yellow-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>
+              MATCH HISTORY
+            </h2>
+            <p className="text-zinc-500 text-xs font-medium">Click a game to expand details</p>
+          </div>
+        </div>
+
+        {myGames.length === 0 ? (
+          <div className="text-center py-12 text-zinc-500 text-sm font-medium">
+            No games yet. Get playing! 🃏
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {myGames.map((game) => {
+              const myEntry = game.players.find((p: any) => p.username === currentUser.username);
+              const myScore = myEntry?.score || 0;
+              const isPos = myScore > 0;
+              const isNeg = myScore < 0;
+              const isExpanded = expandedGame === game._id;
+
+              return (
+                <div key={game._id} className="match-card">
+                  <div
+                    className="match-card-header"
+                    onClick={() => setExpandedGame(isExpanded ? null : game._id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0"
+                        style={{
+                          background: isPos ? "rgba(16,185,129,0.15)" : isNeg ? "rgba(224,48,48,0.15)" : "rgba(255,255,255,0.05)",
+                          color: isPos ? "#10b981" : isNeg ? "#ef4444" : "#6b7a99",
+                          border: `1px solid ${isPos ? "rgba(16,185,129,0.3)" : isNeg ? "rgba(224,48,48,0.3)" : "#1f2d45"}`,
+                        }}
+                      >
+                        {isPos ? "W" : isNeg ? "L" : "D"}
+                      </div>
+                      <div>
+                        <div className="text-sm font-black text-white" style={{ fontFamily: "var(--font-rajdhani)" }}>
+                          {new Date(game.date).toLocaleDateString("en-US", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </div>
+                        <div className="text-xs text-zinc-500 font-medium">
+                          {game.players.length} players · {game.players.map((p: any) => p.username).join(", ")}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`text-base font-black font-mono ${isPos ? "text-emerald-400" : isNeg ? "text-red-400" : "text-zinc-500"}`}
+                        style={{ fontFamily: "var(--font-orbitron)" }}
+                      >
+                        {isPos ? "+" : ""}{myScore} TND
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-zinc-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-zinc-500" />
+                      )}
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="match-card-body space-y-4">
+                      <div style={{ borderTop: "1px solid #1f2d45", marginBottom: "16px" }} />
+                      {/* All players scorecard */}
+                      <div>
+                        <p className="section-label mb-2">Scorecard</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {[...game.players]
+                            .sort((a: any, b: any) => b.score - a.score)
+                            .map((player: any) => {
+                              const isW = player.score > 0;
+                              const isL = player.score < 0;
+                              const isMe = player.username === currentUser.username;
+                              return (
+                                <div
+                                  key={player.userId}
+                                  className="flex items-center justify-between p-2.5 rounded-lg"
+                                  style={{
+                                    background: isMe ? "rgba(245,197,24,0.05)" : "rgba(255,255,255,0.02)",
+                                    border: isMe ? "1px solid rgba(245,197,24,0.2)" : "1px solid #1f2d45",
+                                  }}
+                                >
+                                  <span className="text-sm font-bold text-white capitalize truncate pr-2"
+                                    style={{ fontFamily: "var(--font-rajdhani)" }}>
+                                    {player.username}{isMe ? " 👤" : ""}
+                                  </span>
+                                  <span className={`text-xs font-black font-mono ${isW ? "text-emerald-400" : isL ? "text-red-400" : "text-zinc-500"}`}>
+                                    {player.score > 0 ? "+" : ""}{player.score}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+
+                      {/* Transactions */}
+                      {game.transactions.length > 0 && (
+                        <div>
+                          <p className="section-label mb-2">Transactions ({game.transactions.length})</p>
+                          <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                            {game.transactions.map((tx: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg"
+                                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #1f2d45" }}
+                              >
+                                <span className="text-zinc-400">
+                                  <span className="text-red-400 font-bold capitalize">{tx.toUser}</span>
+                                  {" borrowed "}
+                                  <span className="text-white font-mono font-bold">{formatTnd(tx.amount)}</span>
+                                  {" from "}
+                                  <span className="text-zinc-200 font-bold capitalize">{tx.fromUser}</span>
+                                </span>
+                                <span className="text-zinc-600 font-mono ml-2 shrink-0">
+                                  {new Date(tx.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Change Password */}
+      <div className="game-card p-6 space-y-5">
+        <div className="flex items-center gap-3">
+          <div
+            className="p-2.5 rounded-xl"
+            style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)" }}
+          >
+            <Key className="w-5 h-5 text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>
+              SECURITY
+            </h2>
+            <p className="text-zinc-500 text-xs font-medium">Change your account password</p>
+          </div>
+        </div>
+
+        <form action={passwordFormAction} className="space-y-4">
+          <div>
+            <label
+              className="block text-xs font-bold tracking-widest uppercase mb-2 text-zinc-500"
+              style={{ fontFamily: "var(--font-rajdhani)" }}
+              htmlFor="currentPassword"
+            >
+              Current Password
+            </label>
+            <input
+              id="currentPassword"
+              name="currentPassword"
+              type="password"
+              required
+              placeholder="Enter current password"
+              className="game-input w-full px-3 py-2.5 text-sm font-semibold"
+            />
+          </div>
+          <div>
+            <label
+              className="block text-xs font-bold tracking-widest uppercase mb-2 text-zinc-500"
+              style={{ fontFamily: "var(--font-rajdhani)" }}
+              htmlFor="newPassword"
+            >
+              New Password
+            </label>
+            <input
+              id="newPassword"
+              name="newPassword"
+              type="password"
+              required
+              placeholder="At least 6 characters"
+              className="game-input w-full px-3 py-2.5 text-sm font-semibold"
+            />
           </div>
 
-          {myGames.length === 0 ? (
-            <p className="text-zinc-500 text-sm text-center py-12">
-              You haven't participated in any games yet.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 text-sm font-bold">
-                    <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4">Lobby Players</th>
-                    <th className="py-3 px-4 text-right">Your Result</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
-                  {myGames.map((game) => {
-                    const myEntry = game.players.find(
-                      (p: any) => p.username === currentUser.username
-                    );
-                    const myScore = myEntry?.score || 0;
-                    const isPositive = myScore > 0;
-                    const isNegative = myScore < 0;
-
-                    return (
-                      <tr key={game._id} className="text-zinc-805 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/10 transition-colors font-semibold">
-                        <td className="py-4 px-4">
-                          <span className="flex items-center gap-2 text-sm font-medium">
-                            <Calendar className="w-4 h-4 text-zinc-400" />
-                            {new Date(game.date).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-sm text-zinc-500 dark:text-zinc-400 max-w-xs truncate font-medium">
-                          {game.players.map((p: any) => p.username).join(", ")}
-                        </td>
-                        <td className={`py-4 px-4 text-right font-mono font-bold ${
-                          isPositive ? "text-emerald-600 dark:text-emerald-400" : isNegative ? "text-red-600 dark:text-red-500" : "text-zinc-500"
-                        }`}>
-                          {isPositive ? "+" : ""}
-                          {formatTnd(myScore)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {passwordState?.error && (
+            <div
+              className="text-xs font-bold p-2.5 rounded-xl text-center"
+              style={{ background: "rgba(224,48,48,0.1)", border: "1px solid rgba(224,48,48,0.3)", color: "#f87171" }}
+            >
+              {passwordState.error}
             </div>
           )}
-        </div>
-
-        {/* Change Password Panel (Takes 1 column) */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500/10 text-red-650 dark:text-red-500 rounded-lg">
-              <Key className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-zinc-950 dark:text-white">Change Password</h2>
-              <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">Update your account password</p>
-            </div>
-          </div>
-
-          <form action={passwordFormAction} className="space-y-4">
-            <div>
-              <label className="block text-zinc-650 dark:text-zinc-400 text-xs font-semibold mb-1.5" htmlFor="currentPassword">
-                Current Password
-              </label>
-              <input
-                id="currentPassword"
-                name="currentPassword"
-                type="password"
-                required
-                placeholder="Enter current password"
-                className="w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-950 dark:text-white px-3 py-2.5 rounded-lg border border-zinc-250 dark:border-zinc-800 focus:border-red-605 dark:focus:border-red-505 focus:outline-none text-sm transition-all font-semibold"
-              />
-            </div>
-
-            <div>
-              <label className="block text-zinc-655 dark:text-zinc-400 text-xs font-semibold mb-1.5" htmlFor="newPassword">
-                New Password
-              </label>
-              <input
-                id="newPassword"
-                name="newPassword"
-                type="password"
-                required
-                placeholder="At least 6 chars"
-                className="w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-950 dark:text-white px-3 py-2.5 rounded-lg border border-zinc-250 dark:border-zinc-800 focus:border-red-605 dark:focus:border-red-505 focus:outline-none text-sm transition-all font-semibold"
-              />
-            </div>
-
-            {passwordState?.error && (
-              <div className="text-red-650 dark:text-red-400 bg-red-500/10 border border-red-500/20 text-xs p-2.5 rounded-lg text-center font-bold">
-                {passwordState.error}
-              </div>
-            )}
-
-            {passwordState?.success && (
-              <div className="text-emerald-650 dark:text-emerald-450 bg-emerald-500/10 border border-emerald-500/20 text-xs p-2.5 rounded-lg text-center font-bold flex items-center justify-center gap-1">
-                <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                {passwordState.success}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isPasswordPending}
-              className="w-full py-2.5 bg-red-600 hover:bg-red-750 text-white font-extrabold rounded-lg flex items-center justify-center gap-1.5 text-sm transition-all duration-200 disabled:opacity-50 cursor-pointer shadow-sm"
+          {passwordState?.success && (
+            <div
+              className="text-xs font-bold p-2.5 rounded-xl text-center flex items-center justify-center gap-1"
+              style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399" }}
             >
-              {isPasswordPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Update Password"
-              )}
-            </button>
-          </form>
-        </div>
+              <ShieldCheck className="w-4 h-4" />
+              {passwordState.success}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isPasswordPending}
+            className="btn-primary w-full py-3 flex items-center justify-center gap-2 text-sm tracking-wider rounded-xl"
+            style={{ fontFamily: "var(--font-orbitron)" }}
+          >
+            {isPasswordPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin" />SAVING...</>
+            ) : (
+              "UPDATE PASSWORD"
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

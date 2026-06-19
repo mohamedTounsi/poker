@@ -144,6 +144,7 @@ export async function createUserAction(prevState: any, formData: FormData) {
       username,
       password: hashedPassword,
       role: "player",
+      medals: { gold: 0, silver: 0, bronze: 0 },
     });
 
     revalidatePath("/dashboard");
@@ -369,8 +370,28 @@ export async function endGameAction(gameId: string) {
     game.status = "completed";
     await game.save();
 
+    // Award medals to top 3 players by score
+    const sorted = [...game.players].sort((a: any, b: any) => b.score - a.score);
+    const medalMap: Record<number, keyof { gold: number; silver: number; bronze: number }> = {
+      0: "gold",
+      1: "silver",
+      2: "bronze",
+    };
+
+    for (let i = 0; i < Math.min(3, sorted.length); i++) {
+      const medal = medalMap[i];
+      if (sorted[i].score > 0 || i === 0) {
+        // Award medal even to 1st place if score is 0 or positive
+        await User.findOneAndUpdate(
+          { username: sorted[i].username },
+          { $inc: { [`medals.${medal}`]: 1 } }
+        );
+      }
+    }
+
     revalidatePath("/dashboard");
     revalidatePath("/history");
+    revalidatePath("/leaderboard");
   } catch (error: any) {
     console.error("End game error:", error);
     return { error: error.message };

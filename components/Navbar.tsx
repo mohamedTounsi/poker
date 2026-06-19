@@ -3,137 +3,226 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { logoutAction } from "../app/actions";
-import { Spade, LogOut, History, LayoutDashboard, User, Sun, Moon } from "lucide-react";
+import { Spade, LogOut, History, LayoutDashboard, Trophy, ChevronDown } from "lucide-react";
 import { usePathname } from "next/navigation";
+import PlayerAvatar from "./PlayerAvatar";
+import RankBadge from "./RankBadge";
+import HelpModal from "./HelpModal";
 
 interface NavbarProps {
   user: {
     username: string;
     role: "admin" | "player";
+    avatarUrl?: string | null;
+    netBalance?: number;
   };
 }
 
 export default function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [mounted, setMounted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-    const currentTheme = savedTheme || "dark";
-    setTheme(currentTheme);
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
+  const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
 
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
-
-  const isActive = (path: string) => pathname === path;
+  const navLinks = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/history", label: "History", icon: History },
+    { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-900 shadow-sm transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <Link href="/dashboard" className="flex items-center gap-2 group">
-          <div className="p-1.5 bg-red-500/10 dark:bg-red-500/15 border border-red-500/30 dark:border-red-500/40 rounded-lg text-red-650 dark:text-red-500 transition-all duration-300 group-hover:bg-red-550 group-hover:text-white">
-            <Spade className="w-5 h-5 fill-current" />
-          </div>
-          <span className="font-black text-zinc-950 dark:text-white tracking-tight text-lg transition-colors">
-            Poker<span className="text-red-600 dark:text-red-500">Tracker</span>
-          </span>
-        </Link>
-
-        {/* Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
-          <Link
-            href="/dashboard"
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-              isActive("/dashboard")
-                ? "bg-zinc-100 dark:bg-zinc-900 text-red-650 dark:text-red-500 border border-zinc-250 dark:border-zinc-800"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
-            }`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Dashboard
-          </Link>
-          <Link
-            href="/history"
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-              isActive("/history")
-                ? "bg-zinc-100 dark:bg-zinc-900 text-red-650 dark:text-red-500 border border-zinc-250 dark:border-zinc-800"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
-            }`}
-          >
-            <History className="w-4 h-4" />
-            Match History
-          </Link>
-        </nav>
-
-        {/* User Stats & Mode Selector */}
-        <div className="flex items-center gap-3">
-          {/* Theme Switcher Button */}
-          {mounted && (
-            <button
-              onClick={toggleTheme}
-              className="p-2 text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-805 border border-zinc-200 dark:border-zinc-850 rounded-xl transition-all duration-300 cursor-pointer"
-              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+    <>
+      {/* Desktop / Top Navbar */}
+      <header
+        className="sticky top-0 z-50 w-full transition-all duration-300"
+        style={{
+          background: scrolled
+            ? "rgba(10,14,26,0.95)"
+            : "rgba(10,14,26,0.85)",
+          backdropFilter: "blur(16px)",
+          borderBottom: "1px solid #1f2d45",
+          boxShadow: scrolled ? "0 4px 24px rgba(0,0,0,0.4)" : "none",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          {/* Brand */}
+          <Link href="/dashboard" className="flex items-center gap-2.5 group shrink-0">
+            <div
+              className="p-2 rounded-xl transition-all duration-300 group-hover:scale-110"
+              style={{
+                background: "rgba(224,48,48,0.15)",
+                border: "1px solid rgba(224,48,48,0.3)",
+                boxShadow: "0 0 12px rgba(224,48,48,0.2)",
+              }}
             >
-              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-800" />}
-            </button>
-          )}
-
-          {/* User Badge */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 rounded-xl">
-            <User className="w-4 h-4 text-red-600 dark:text-red-500" />
-            <span className="text-sm font-bold text-zinc-850 dark:text-zinc-200 capitalize">{user.username}</span>
-            <span className="text-[9px] font-extrabold tracking-wider uppercase px-1.5 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-              {user.role}
+              <Spade className="w-5 h-5 fill-current text-red-400" />
+            </div>
+            <span
+              className="font-black text-white tracking-tight text-lg hidden sm:block"
+              style={{ fontFamily: "var(--font-orbitron)" }}
+            >
+              POKER<span className="text-red-400">ZONE</span>
             </span>
+          </Link>
+
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-1">
+            {navLinks.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200"
+                style={{
+                  fontFamily: "var(--font-rajdhani)",
+                  letterSpacing: "0.04em",
+                  background: isActive(href) ? "rgba(224,48,48,0.12)" : "transparent",
+                  color: isActive(href) ? "#f87171" : "#6b7a99",
+                  border: isActive(href) ? "1px solid rgba(224,48,48,0.25)" : "1px solid transparent",
+                }}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Right side: Help + User */}
+          <div className="flex items-center gap-2">
+            <HelpModal />
+
+            {/* User dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen((v) => !v)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid #1f2d45",
+                }}
+              >
+                <PlayerAvatar
+                  username={user.username}
+                  avatarUrl={user.avatarUrl}
+                  size="xs"
+                />
+                <span
+                  className="text-sm font-bold text-zinc-200 capitalize hidden sm:block"
+                  style={{ fontFamily: "var(--font-rajdhani)" }}
+                >
+                  {user.username}
+                </span>
+                {user.role !== "admin" && user.netBalance !== undefined && (
+                  <RankBadge netBalance={user.netBalance} showName={false} size="sm" />
+                )}
+                {user.role === "admin" && (
+                  <span
+                    className="text-[9px] font-black tracking-wider uppercase px-1.5 py-0.5 rounded-lg"
+                    style={{
+                      background: "rgba(224,48,48,0.15)",
+                      color: "#f87171",
+                      border: "1px solid rgba(224,48,48,0.3)",
+                    }}
+                  >
+                    ADMIN
+                  </span>
+                )}
+                <ChevronDown
+                  className="w-3.5 h-3.5 text-zinc-500 transition-transform duration-200"
+                  style={{ transform: profileOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                />
+              </button>
+
+              {/* Dropdown */}
+              {profileOpen && (
+                <div
+                  className="absolute right-0 top-full mt-2 w-44 rounded-xl overflow-hidden slide-in-up z-50"
+                  style={{
+                    background: "#111827",
+                    border: "1px solid #1f2d45",
+                    boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
+                  }}
+                >
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
+                    style={{ fontFamily: "var(--font-rajdhani)" }}
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    My Profile
+                  </Link>
+                  <div style={{ borderTop: "1px solid #1f2d45" }} />
+                  <form action={logoutAction}>
+                    <button
+                      type="submit"
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
+                      style={{ fontFamily: "var(--font-rajdhani)" }}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* Sign Out Button */}
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="p-2 bg-zinc-50 hover:bg-red-50 dark:bg-zinc-900 dark:hover:bg-red-950/20 border border-zinc-200 dark:border-zinc-850 hover:border-red-200 dark:hover:border-red-900/30 text-zinc-500 hover:text-red-650 dark:text-zinc-400 dark:hover:text-red-400 rounded-xl transition-all duration-300 cursor-pointer"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </form>
         </div>
-      </div>
+      </header>
 
-      {/* Mobile nav indicator bar */}
-      <div className="flex md:hidden border-t border-zinc-200 dark:border-zinc-900 h-11 bg-zinc-50 dark:bg-zinc-950 items-center justify-around text-xs font-semibold">
-        <Link
-          href="/dashboard"
-          className={`flex items-center gap-1 py-2 px-4 ${
-            isActive("/dashboard") ? "text-red-600 dark:text-red-500 font-bold" : "text-zinc-500"
-          }`}
-        >
-          <LayoutDashboard className="w-3.5 h-3.5" />
-          Dashboard
-        </Link>
-        <Link
-          href="/history"
-          className={`flex items-center gap-1 py-2 px-4 ${
-            isActive("/history") ? "text-red-600 dark:text-red-500 font-bold" : "text-zinc-500"
-          }`}
-        >
-          <History className="w-3.5 h-3.5" />
-          Match History
-        </Link>
-      </div>
-    </header>
+      {/* Mobile Bottom Navigation */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around px-2 py-2"
+        style={{
+          background: "rgba(10,14,26,0.97)",
+          borderTop: "1px solid #1f2d45",
+          backdropFilter: "blur(16px)",
+        }}
+      >
+        {navLinks.map(({ href, label, icon: Icon }) => {
+          const active = isActive(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all duration-200"
+              style={{
+                color: active ? "#f87171" : "#6b7a99",
+                background: active ? "rgba(224,48,48,0.1)" : "transparent",
+              }}
+            >
+              <Icon className="w-5 h-5" />
+              <span
+                className="text-[9px] font-black tracking-wider uppercase"
+                style={{ fontFamily: "var(--font-rajdhani)" }}
+              >
+                {label}
+              </span>
+            </Link>
+          );
+        })}
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all cursor-pointer"
+            style={{ color: "#6b7a99" }}
+          >
+            <LogOut className="w-5 h-5" />
+            <span
+              className="text-[9px] font-black tracking-wider uppercase"
+              style={{ fontFamily: "var(--font-rajdhani)" }}
+            >
+              Logout
+            </span>
+          </button>
+        </form>
+      </nav>
+    </>
   );
 }

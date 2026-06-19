@@ -20,10 +20,10 @@ import {
   Clock,
   Trash2,
   Loader2,
-  PlayCircle,
-  TrendingUp,
+  MoveRight,
 } from "lucide-react";
 import Link from "next/link";
+import PlayerAvatar from "../../../components/PlayerAvatar";
 
 interface GameClientProps {
   game: any;
@@ -293,7 +293,7 @@ export default function GameClient({ game, currentUser, allUsers }: GameClientPr
           return (
             <div
               key={player.userId}
-              className={`bg-white dark:bg-zinc-900 border rounded-2xl p-6 shadow-md relative flex flex-col justify-between items-center group transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+              className={`bg-white dark:bg-zinc-900 border rounded-2xl p-6 shadow-md relative flex flex-col justify-between items-center group transition-all duration-200 hover:shadow-xl hover:-translate-y-2 ${
                 isPositive
                   ? "border-zinc-350 dark:border-zinc-700"
                   : isNegative
@@ -302,15 +302,15 @@ export default function GameClient({ game, currentUser, allUsers }: GameClientPr
               }`}
             >
               {/* Playing Card Corner Decor - Top Left */}
-              <div className={`absolute top-3 left-3 text-xs font-bold flex flex-col items-center select-none ${suitInfo.color}`}>
+              <div className={`absolute top-4 left-4 text-base font-bold flex flex-col items-center select-none ${suitInfo.color}`}>
                 <span>{player.username.charAt(0).toUpperCase()}</span>
-                <span className="leading-none mt-0.5">{suitInfo.char}</span>
+                <span className="leading-none mt-1 text-2xl">{suitInfo.char}</span>
               </div>
 
               {/* Playing Card Corner Decor - Bottom Right (Rotated) */}
-              <div className={`absolute bottom-3 right-3 text-xs font-bold flex flex-col items-center select-none rotate-180 ${suitInfo.color}`}>
+              <div className={`absolute bottom-4 right-4 text-base font-bold flex flex-col items-center select-none rotate-180 ${suitInfo.color}`}>
                 <span>{player.username.charAt(0).toUpperCase()}</span>
-                <span className="leading-none mt-0.5">{suitInfo.char}</span>
+                <span className="leading-none mt-1 text-2xl">{suitInfo.char}</span>
               </div>
 
               {/* Delete button (Admin only) */}
@@ -325,12 +325,12 @@ export default function GameClient({ game, currentUser, allUsers }: GameClientPr
               )}
 
               {/* Dynamic Center Suit Icon */}
-              <div className={`text-4xl my-3 select-none ${suitInfo.color}`}>
+              <div className={`text-8xl my-6 select-none ${suitInfo.color} opacity-80`}>
                 {suitInfo.char}
               </div>
 
               {/* Username */}
-              <h4 className="text-lg font-black text-zinc-950 dark:text-white capitalize tracking-wide mb-1">{player.username}</h4>
+              <h4 className="text-2xl font-black text-zinc-950 dark:text-white capitalize tracking-wide mb-2 z-10 bg-white/80 dark:bg-zinc-900/80 px-4 py-1 rounded-full">{player.username}</h4>
 
               {/* Current Score Display */}
               <div className="my-4 flex items-center gap-4 z-10">
@@ -565,42 +565,84 @@ export default function GameClient({ game, currentUser, allUsers }: GameClientPr
       )}
 
       {/* Transaction History Log (Audit Log) */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="game-card p-6 space-y-5">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-red-500/10 text-red-650 dark:text-red-500 rounded-lg">
-            <Clock className="w-5 h-5" />
+          <div
+            className="p-2.5 rounded-xl"
+            style={{ background: "rgba(224,48,48,0.1)", border: "1px solid rgba(224,48,48,0.2)" }}
+          >
+            <Clock className="w-5 h-5 text-red-400" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-zinc-950 dark:text-white">Lobby Transaction Log</h3>
-            <p className="text-zinc-500 dark:text-zinc-400 text-xs font-medium">Timeline of borrow / lend activities logged in this game</p>
+            <h3 className="text-lg font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>TRANSACTION LOG</h3>
+            <p className="text-zinc-500 text-xs font-medium">Visual timeline of chip transfers in this session</p>
           </div>
         </div>
 
         {game.transactions.length === 0 ? (
-          <p className="text-zinc-550 text-sm text-center py-6 font-medium">
-            No transactions have been recorded in this game session yet.
-          </p>
+          <div
+            className="text-center py-10 rounded-2xl"
+            style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed #1f2d45" }}
+          >
+            <span className="text-zinc-500 text-sm font-medium">No transactions recorded yet.</span>
+          </div>
         ) : (
-          <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-            {[...game.transactions].reverse().map((tx: any, idx: number) => (
-              <div
-                key={tx._id || idx}
-                className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl text-sm transition-colors"
-              >
-                <div className="flex items-center gap-2 text-zinc-800 dark:text-zinc-300 font-semibold">
-                  <span className="font-extrabold text-red-600 dark:text-red-400 capitalize">{tx.toUser}</span>
-                  <span className="text-zinc-500 dark:text-zinc-500 text-xs font-medium">borrowed</span>
-                  <span className="font-mono font-bold text-zinc-950 dark:text-white px-2 py-0.5 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                    {formatTnd(tx.amount)}
-                  </span>
-                  <span className="text-zinc-500 dark:text-zinc-500 text-xs font-medium">from</span>
-                  <span className="font-extrabold text-zinc-900 dark:text-zinc-200 capitalize">{tx.fromUser}</span>
+          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+            {[...game.transactions].reverse().map((tx: any, idx: number) => {
+              const fromPlayer = game.players.find((p: any) => p.username === tx.fromUser);
+              const toPlayer = game.players.find((p: any) => p.username === tx.toUser);
+              return (
+                <div
+                  key={tx._id || idx}
+                  className="flex items-center gap-3 p-4 rounded-2xl"
+                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #1f2d45" }}
+                >
+                  {/* Giver (lender) */}
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <PlayerAvatar
+                      username={tx.fromUser}
+                      avatarUrl={fromPlayer?.avatarUrl ?? null}
+                      size="md"
+                      showRing
+                      ringColor="#10b981"
+                    />
+                    <span className="text-[10px] font-black text-emerald-400 capitalize tracking-wide">
+                      {tx.fromUser}
+                    </span>
+                    <span className="text-[9px] text-emerald-500 font-bold">GIVER +</span>
+                  </div>
+
+                  {/* Arrow + amount */}
+                  <div className="flex-1 flex flex-col items-center gap-1">
+                    <div
+                      className="px-3 py-1.5 rounded-xl font-mono font-black text-sm"
+                      style={{ background: "rgba(245,197,24,0.1)", border: "1px solid rgba(245,197,24,0.25)", color: "#f5c518" }}
+                    >
+                      {formatTnd(tx.amount)}
+                    </div>
+                    <MoveRight className="w-6 h-6 text-zinc-600" />
+                    <span className="text-[9px] text-zinc-500 font-mono">
+                      {new Date(tx.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+
+                  {/* Receiver (borrower) */}
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <PlayerAvatar
+                      username={tx.toUser}
+                      avatarUrl={toPlayer?.avatarUrl ?? null}
+                      size="md"
+                      showRing
+                      ringColor="#ef4444"
+                    />
+                    <span className="text-[10px] font-black text-red-400 capitalize tracking-wide">
+                      {tx.toUser}
+                    </span>
+                    <span className="text-[9px] text-red-500 font-bold">BORROWER −</span>
+                  </div>
                 </div>
-                <span className="text-xs text-zinc-500 font-mono">
-                  {new Date(tx.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

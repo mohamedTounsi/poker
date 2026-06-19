@@ -3,31 +3,30 @@
 import { useState, useActionState } from "react";
 import { createUserAction, startGameAction } from "../actions";
 import { formatTnd } from "../../lib/utils";
-import { Users, Play, Plus, History, Key, UserPlus, Spade, ArrowUpRight, ArrowDownRight, Loader2, PlayCircle } from "lucide-react";
+import { getRankInfo } from "../../lib/rankUtils";
+import { Users, Play, Plus, UserPlus, ArrowUpRight, ArrowDownRight, Loader2, PlayCircle, Spade } from "lucide-react";
 import Link from "next/link";
+import PlayerAvatar from "../../components/PlayerAvatar";
+import RankBadge from "../../components/RankBadge";
 
 interface AdminDashboardProps {
-  currentUser: { username: string };
   players: any[];
   balances: Record<string, number>;
   activeGame: any | null;
-  historyGames: any[];
+  avatarMap: Record<string, string | null>;
 }
 
 export default function AdminDashboard({
-  currentUser,
   players,
   balances,
   activeGame,
-  historyGames,
+  avatarMap,
 }: AdminDashboardProps) {
-  // State for creating user
   const [createUserState, createUserFormAction, isCreateUserPending] = useActionState(
     createUserAction,
     null
   );
 
-  // State for starting game
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [isStartingGame, setIsStartingGame] = useState(false);
   const [startGameError, setStartGameError] = useState<string | null>(null);
@@ -59,68 +58,120 @@ export default function AdminDashboard({
     }
   };
 
+  // Sort players by balance desc for standings
+  const sortedPlayers = [...players].sort(
+    (a, b) => (balances[b.username] || 0) - (balances[a.username] || 0)
+  );
+
   return (
     <div className="space-y-8">
-      {/* Active Game Notice */}
+      {/* Active Game Banner */}
       {activeGame ? (
-        <div className="bg-gradient-to-r from-red-650/20 via-red-500/5 to-zinc-100 dark:to-zinc-900 border border-red-500/30 rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+        <div
+          className="rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4"
+          style={{
+            background: "linear-gradient(135deg, rgba(224,48,48,0.15) 0%, rgba(224,48,48,0.05) 100%)",
+            border: "1px solid rgba(224,48,48,0.35)",
+            boxShadow: "0 0 30px rgba(224,48,48,0.1)",
+          }}
+        >
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-red-500/10 text-red-600 dark:text-red-500 border border-red-500/20 rounded-xl animate-pulse">
-              <Spade className="w-8 h-8 fill-current" />
+            <div
+              className="p-3 rounded-xl"
+              style={{ background: "rgba(224,48,48,0.15)", border: "1px solid rgba(224,48,48,0.3)" }}
+            >
+              <Spade className="w-8 h-8 fill-current text-red-400 live-blink" />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold text-zinc-950 dark:text-white">Active Gameplay Session</h2>
-              <p className="text-zinc-650 dark:text-zinc-400 text-sm mt-1 font-medium">
-                There is an active poker game with {activeGame.players.length} players currently running.
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 live-blink" />
+                <span className="text-xs font-black tracking-widest uppercase text-red-400"
+                  style={{ fontFamily: "var(--font-rajdhani)" }}>
+                  LIVE SESSION
+                </span>
+              </div>
+              <h2 className="text-xl font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>
+                Game In Progress
+              </h2>
+              <p className="text-sm text-zinc-400 font-medium mt-0.5">
+                {activeGame.players.length} players at the table
               </p>
             </div>
           </div>
           <Link
             href={`/game/${activeGame._id}`}
-            className="w-full md:w-auto px-6 py-3 bg-red-600 hover:bg-red-750 text-white font-extrabold rounded-xl flex items-center justify-center gap-2 transition-all duration-200 shadow-[0_4px_15px_rgba(220,38,38,0.25)] cursor-pointer"
+            className="btn-primary w-full sm:w-auto px-6 py-3 flex items-center justify-center gap-2 rounded-xl text-sm tracking-wider"
+            style={{ fontFamily: "var(--font-orbitron)" }}
           >
             <Play className="w-4 h-4 fill-current" />
-            Resume Game Session
+            RESUME GAME
           </Link>
         </div>
       ) : (
         /* Start New Game Section */
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-red-500/10 text-red-650 dark:text-red-500 rounded-lg">
-              <PlayCircle className="w-6 h-6" />
+        <div className="game-card p-6 space-y-6">
+          <div className="flex items-center gap-3">
+            <div
+              className="p-2.5 rounded-xl"
+              style={{ background: "rgba(224,48,48,0.1)", border: "1px solid rgba(224,48,48,0.2)" }}
+            >
+              <PlayCircle className="w-6 h-6 text-red-400" />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold text-zinc-950 dark:text-white">Start New Game</h2>
-              <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">Select players to join the new gameplay session</p>
+              <h2 className="text-xl font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>
+                START NEW GAME
+              </h2>
+              <p className="text-zinc-500 text-sm font-medium">Select players to include in this session</p>
             </div>
           </div>
 
           {players.length === 0 ? (
-            <p className="text-zinc-500 text-sm text-center py-6">
-              No players created yet. Use the form below to create accounts.
+            <p className="text-zinc-500 text-sm text-center py-8">
+              No players yet. Create accounts below.
             </p>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {players.map((player) => {
                   const isSelected = selectedPlayers.includes(player._id.toString());
+                  const net = balances[player.username] || 0;
                   return (
                     <button
                       key={player._id}
                       onClick={() => togglePlayerSelection(player._id.toString())}
-                      className={`p-4 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between h-24 cursor-pointer relative overflow-hidden ${
-                        isSelected
-                          ? "bg-red-500/5 dark:bg-red-500/10 border-red-600 dark:border-red-550 shadow-[0_0_12px_rgba(220,38,38,0.15)] text-zinc-950 dark:text-white"
-                          : "bg-zinc-50 dark:bg-zinc-950/80 border-zinc-200 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:border-zinc-350 dark:hover:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-900/60"
-                      }`}
+                      className="relative p-4 rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/[0.04] active:scale-95"
+                      style={{
+                        background: isSelected ? "rgba(224,48,48,0.12)" : "rgba(255,255,255,0.02)",
+                        border: isSelected
+                          ? "2px solid rgba(224,48,48,0.6)"
+                          : "1px solid #1f2d45",
+                        boxShadow: isSelected ? "0 0 20px rgba(224,48,48,0.25)" : "none",
+                      }}
                     >
-                      <div className="font-bold capitalize truncate w-full text-sm">{player.username}</div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-455 font-mono font-bold mt-1">
-                        {formatTnd(balances[player.username] || 0)}
+                      <div className="relative inline-block">
+                        <PlayerAvatar
+                          username={player.username}
+                          avatarUrl={avatarMap[player.username]}
+                          size="xl"
+                          showRing={isSelected}
+                          ringColor="#ef4444"
+                        />
+                        <div className="absolute -bottom-5 -right-5 z-10 drop-shadow-md">
+                          <RankBadge netBalance={net} showName={false} size="md" />
+                        </div>
                       </div>
+                      
+                      <span className="text-xl font-black text-white capitalize truncate text-center w-full" style={{ fontFamily: "var(--font-orbitron)" }}>
+                        {player.username}
+                      </span>
+
                       {isSelected && (
-                        <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.5)]" />
+                        <span
+                          className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white font-black"
+                          style={{ boxShadow: "0 0 8px rgba(224,48,48,0.8)" }}
+                        >
+                          ✓
+                        </span>
                       )}
                     </button>
                   );
@@ -128,7 +179,10 @@ export default function AdminDashboard({
               </div>
 
               {startGameError && (
-                <div className="text-red-650 dark:text-red-400 bg-red-500/10 border border-red-500/20 text-sm p-3 rounded-lg text-center font-bold">
+                <div
+                  className="text-sm font-bold p-3 rounded-xl text-center"
+                  style={{ background: "rgba(224,48,48,0.1)", border: "1px solid rgba(224,48,48,0.3)", color: "#f87171" }}
+                >
                   {startGameError}
                 </div>
               )}
@@ -137,18 +191,13 @@ export default function AdminDashboard({
                 <button
                   onClick={handleStartGame}
                   disabled={isStartingGame || selectedPlayers.length === 0}
-                  className="px-6 py-3 bg-red-600 hover:bg-red-750 text-white font-extrabold rounded-xl flex items-center gap-2 transition-all duration-200 shadow-[0_4px_15px_rgba(220,38,38,0.25)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="btn-primary px-6 py-3 flex items-center gap-2 rounded-xl text-sm tracking-wider"
+                  style={{ fontFamily: "var(--font-orbitron)" }}
                 >
                   {isStartingGame ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Creating game...
-                    </>
+                    <><Loader2 className="w-5 h-5 animate-spin" />CREATING...</>
                   ) : (
-                    <>
-                      <Play className="w-4 h-4 fill-current" />
-                      Start Gameplay ({selectedPlayers.length} Selected)
-                    </>
+                    <><Play className="w-4 h-4 fill-current" />START GAME ({selectedPlayers.length})</>
                   )}
                 </button>
               </div>
@@ -157,111 +206,76 @@ export default function AdminDashboard({
         </div>
       )}
 
-      {/* Grid: Global Standings & Admin Controls */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Standings/Leaderboard (Takes 2 columns) */}
-        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/10 text-red-650 dark:text-red-500 rounded-lg">
-                <Users className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-zinc-950 dark:text-white">Global Player Standings</h2>
-                <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">Overall net gains and losses</p>
-              </div>
-            </div>
-          </div>
+      {/* Create Player Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 text-sm font-semibold">
-                  <th className="py-3 px-4 font-bold">Player</th>
-                  <th className="py-3 px-4 font-bold text-right">Total Net Balance</th>
-                  <th className="py-3 px-4 font-bold text-right">Role</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
-                {players.map((player) => {
-                  const netVal = balances[player.username] || 0;
-                  const isPositive = netVal > 0;
-                  const isNegative = netVal < 0;
-
-                  return (
-                    <tr key={player._id} className="text-zinc-800 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/10 transition-colors font-medium">
-                      <td className="py-3.5 px-4 capitalize font-semibold">{player.username}</td>
-                      <td className={`py-3.5 px-4 text-right font-mono font-bold ${
-                        isPositive ? "text-emerald-600 dark:text-emerald-450" : isNegative ? "text-red-600 dark:text-red-500" : "text-zinc-500"
-                      }`}>
-                        <span className="flex items-center justify-end gap-1">
-                          {isPositive && <ArrowUpRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
-                          {isNegative && <ArrowDownRight className="w-4 h-4 text-red-600 dark:text-red-550" />}
-                          {formatTnd(netVal)}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <span className="inline-block text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-750">
-                          {player.role}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Create Player Account (Takes 1 column) */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-6">
+        {/* Create Player */}
+        <div className="game-card p-6 space-y-5">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500/10 text-red-650 dark:text-red-500 rounded-lg">
-              <UserPlus className="w-6 h-6" />
+            <div
+              className="p-2.5 rounded-xl"
+              style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}
+            >
+              <UserPlus className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-zinc-950 dark:text-white">Create Player</h2>
-              <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">Add a new player account</p>
+              <h2 className="text-lg font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>
+                ADD PLAYER
+              </h2>
+              <p className="text-zinc-500 text-xs font-medium">Create a new player account</p>
             </div>
           </div>
 
           <form action={createUserFormAction} className="space-y-4">
             <div>
-              <label className="block text-zinc-600 dark:text-zinc-400 text-xs font-semibold mb-1.5" htmlFor="username">
+              <label
+                className="block text-xs font-bold tracking-widest uppercase mb-2 text-zinc-500"
+                style={{ fontFamily: "var(--font-rajdhani)" }}
+                htmlFor="new-username"
+              >
                 Username
               </label>
               <input
-                id="username"
+                id="new-username"
                 name="username"
                 type="text"
                 required
                 placeholder="e.g. yassine"
-                className="w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-950 dark:text-white px-3 py-2.5 rounded-lg border border-zinc-250 dark:border-zinc-800 focus:border-red-600 dark:focus:border-red-500 focus:outline-none text-sm transition-all font-medium"
+                className="game-input w-full px-3 py-2.5 text-sm font-semibold"
               />
             </div>
 
             <div>
-              <label className="block text-zinc-600 dark:text-zinc-400 text-xs font-semibold mb-1.5" htmlFor="password">
-                Temporary Password
+              <label
+                className="block text-xs font-bold tracking-widest uppercase mb-2 text-zinc-500"
+                style={{ fontFamily: "var(--font-rajdhani)" }}
+                htmlFor="new-password"
+              >
+                Password
               </label>
               <input
-                id="password"
+                id="new-password"
                 name="password"
                 type="password"
                 required
-                placeholder="At least 6 chars"
-                className="w-full bg-zinc-50 dark:bg-zinc-950 text-zinc-950 dark:text-white px-3 py-2.5 rounded-lg border border-zinc-250 dark:border-zinc-800 focus:border-red-600 dark:focus:border-red-500 focus:outline-none text-sm transition-all font-medium"
+                placeholder="At least 6 characters"
+                className="game-input w-full px-3 py-2.5 text-sm font-semibold"
               />
             </div>
 
             {createUserState?.error && (
-              <div className="text-red-650 dark:text-red-450 bg-red-500/10 border border-red-500/20 text-xs p-2.5 rounded-lg text-center font-bold">
+              <div
+                className="text-xs font-bold p-2.5 rounded-xl text-center"
+                style={{ background: "rgba(224,48,48,0.1)", border: "1px solid rgba(224,48,48,0.3)", color: "#f87171" }}
+              >
                 {createUserState.error}
               </div>
             )}
-
             {createUserState?.success && (
-              <div className="text-emerald-650 dark:text-emerald-450 bg-emerald-500/10 border border-emerald-500/20 text-xs p-2.5 rounded-lg text-center font-bold">
+              <div
+                className="text-xs font-bold p-2.5 rounded-xl text-center"
+                style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399" }}
+              >
                 {createUserState.success}
               </div>
             )}
@@ -269,18 +283,13 @@ export default function AdminDashboard({
             <button
               type="submit"
               disabled={isCreateUserPending}
-              className="w-full py-2.5 bg-red-600 hover:bg-red-750 text-white font-extrabold rounded-lg flex items-center justify-center gap-1.5 text-sm transition-all duration-200 disabled:opacity-50 cursor-pointer shadow-sm"
+              className="btn-primary w-full py-3 flex items-center justify-center gap-2 text-sm tracking-wider rounded-xl"
+              style={{ fontFamily: "var(--font-orbitron)" }}
             >
               {isCreateUserPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
-                </>
+                <><Loader2 className="w-4 h-4 animate-spin" />CREATING...</>
               ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  Create Player Account
-                </>
+                <><Plus className="w-4 h-4" />CREATE PLAYER</>
               )}
             </button>
           </form>
