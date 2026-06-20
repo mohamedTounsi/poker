@@ -399,3 +399,39 @@ export async function endGameAction(gameId: string) {
 
   redirect("/dashboard");
 }
+
+export async function decreaseAllPlayersScoreAction(gameId: string, amount: number) {
+  try {
+    const session = await getUserFromCookie();
+    if (!session || session.role !== "admin") {
+      throw new Error("Unauthorized");
+    }
+
+    if (amount <= 0) {
+      throw new Error("Amount must be positive");
+    }
+
+    await connectToDatabase();
+    const game = await Game.findById(gameId);
+    if (!game) {
+      throw new Error("Game not found");
+    }
+
+    if (game.status !== "active") {
+      throw new Error("Cannot edit a completed game");
+    }
+
+    // Decrease score for all players
+    game.players.forEach((p: any) => {
+      p.score -= amount;
+    });
+
+    await game.save();
+
+    revalidatePath(`/game/${gameId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Decrease all scores error:", error);
+    return { error: error.message };
+  }
+}
