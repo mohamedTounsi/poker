@@ -60,13 +60,13 @@ export default async function LeaderboardPage() {
 
   const podiumOrder = [sorted[1], sorted[0], sorted[2]]; // 2nd, 1st, 3rd
   const podiumConfig = [
-    { place: 2, barH: "h-28", color: "#94a3b8", glow: "rgba(148,163,184,0.3)", label: "2ND", avatarSize: "xl" as const, delay: "0.15s" },
-    { place: 1, barH: "h-40", color: "#f5c518", glow: "rgba(245,197,24,0.5)", label: "1ST", avatarSize: "xxl" as const, delay: "0s" },
-    { place: 3, barH: "h-16", color: "#d97706", glow: "rgba(217,119,6,0.3)", label: "3RD", avatarSize: "xl" as const, delay: "0.3s" },
+    { place: 2, barH: "h-28", color: "#C0C0C0", glow: "rgba(192,192,192,0.4)", label: "2ND", avatarSize: "xl" as const, delay: "0.15s" },
+    { place: 1, barH: "h-40", color: "#FFD700", glow: "rgba(255,215,0,0.5)", label: "1ST", avatarSize: "xxl" as const, delay: "0s" },
+    { place: 3, barH: "h-16", color: "#CD7F32", glow: "rgba(205,127,50,0.4)", label: "3RD", avatarSize: "xl" as const, delay: "0.3s" },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#0a0e1a" }}>
+    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)]">
       <Navbar user={navUser} />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
@@ -95,10 +95,10 @@ export default async function LeaderboardPage() {
         {sorted.length >= 3 && (
           <div
             className="game-card p-8 mb-6 hidden sm:block overflow-hidden relative"
-            style={{ background: "rgba(245,197,24,0.02)", border: "1px solid rgba(245,197,24,0.1)" }}
+            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.1)" }}
           >
             {/* Background glow */}
-            <div className="absolute inset-0 opacity-10" style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(245,197,24,0.6), transparent 70%)" }} />
+            <div className="absolute inset-0 opacity-10" style={{ background: "radial-gradient(ellipse at 50% 120%, rgba(255,255,255,0.6), transparent 70%)" }} />
             
             <p className="section-label text-center mb-8">TOP PERFORMERS</p>
             <div className="flex items-end justify-center gap-6 sm:gap-12">
@@ -142,7 +142,7 @@ export default async function LeaderboardPage() {
                     {/* Balance */}
                     <span
                       className="text-xs font-mono font-bold"
-                      style={{ color: net >= 0 ? "#34d399" : "#f87171" }}
+                      style={{ color: net > 0 ? "#22c55e" : net < 0 ? "#ef4444" : "#525252" }}
                     >
                       {net > 0 ? "+" : ""}{formatTnd(net)}
                     </span>
@@ -195,14 +195,14 @@ export default async function LeaderboardPage() {
                     key={player._id}
                     className="relative p-4 rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center gap-3 hover:bg-white/[0.04]"
                     style={{
-                      background: isMe ? "rgba(245,197,24,0.06)" : "rgba(255,255,255,0.02)",
-                      border: isMe ? "1px solid rgba(245,197,24,0.2)" : "1px solid #1f2d45",
+                      background: isMe ? "rgba(6,182,212,0.08)" : "rgba(255,255,255,0.02)",
+                      border: isMe ? "1px solid rgba(6,182,212,0.3)" : "1px solid #1f1f1f",
                     }}
                   >
                     <div 
                       className="absolute top-3 left-3 text-sm font-black" 
                       style={{ 
-                        color: idx === 0 ? "#f5c518" : idx === 1 ? "#94a3b8" : idx === 2 ? "#d97706" : "#6b7a99",
+                        color: idx === 0 ? "#FFD700" : idx === 1 ? "#C0C0C0" : idx === 2 ? "#CD7F32" : "#404040",
                         fontFamily: "var(--font-orbitron)" 
                       }}
                     >
@@ -215,7 +215,7 @@ export default async function LeaderboardPage() {
                         avatarUrl={player.avatarUrl}
                         size="xl"
                         showRing={isMe}
-                        ringColor="#f5c518"
+                        ringColor={isMe ? "#06b6d4" : "#333"}
                       />
                       <div className="absolute -bottom-5 -right-5 z-10 drop-shadow-md">
                         <RankBadge netBalance={net} size="md" showName={false} />
@@ -231,11 +231,14 @@ export default async function LeaderboardPage() {
                       </span>
                       <span
                         className={`text-sm font-black font-mono mt-1 block ${
-                          isPos ? "text-emerald-400" : isNeg ? "text-red-400" : "text-zinc-500"
+                          isPos ? "text-win" : isNeg ? "text-loss" : "text-neutral-600"
                         }`}
                         style={{ fontFamily: "var(--font-orbitron)" }}
                       >
                         {isPos ? "+" : ""}{formatTnd(net)}
+                      </span>
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1 block">
+                        Games: {gamesPlayed[player.username] || 0}
                       </span>
                     </div>
                   </div>

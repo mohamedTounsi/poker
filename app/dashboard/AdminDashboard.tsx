@@ -70,23 +70,23 @@ export default function AdminDashboard({
         <div
           className="rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4"
           style={{
-            background: "linear-gradient(135deg, rgba(224,48,48,0.15) 0%, rgba(224,48,48,0.05) 100%)",
-            border: "1px solid rgba(224,48,48,0.35)",
-            boxShadow: "0 0 30px rgba(224,48,48,0.1)",
+            background: "linear-gradient(135deg, rgba(220,38,38,0.12) 0%, rgba(16,16,16,1) 70%)",
+            border: "1px solid rgba(220,38,38,0.3)",
+            boxShadow: "0 0 40px rgba(220,38,38,0.08)",
           }}
         >
           <div className="flex items-center gap-4">
             <div
               className="p-3 rounded-xl"
-              style={{ background: "rgba(224,48,48,0.15)", border: "1px solid rgba(224,48,48,0.3)" }}
+              style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.3)" }}
             >
-              <Spade className="w-8 h-8 fill-current text-red-400 live-blink" />
+              <Spade className="w-8 h-8 fill-current text-red-500 live-blink" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="w-2 h-2 rounded-full bg-red-500 live-blink" />
                 <span className="text-xs font-black tracking-widest uppercase text-red-400"
-                  style={{ fontFamily: "var(--font-rajdhani)" }}>
+                  style={{ fontFamily: "var(--font-orbitron)" }}>
                   LIVE SESSION
                 </span>
               </div>
@@ -113,7 +113,7 @@ export default function AdminDashboard({
           <div className="flex items-center gap-3">
             <div
               className="p-2.5 rounded-xl"
-              style={{ background: "rgba(224,48,48,0.1)", border: "1px solid rgba(224,48,48,0.2)" }}
+              style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.2)" }}
             >
               <PlayCircle className="w-6 h-6 text-red-400" />
             </div>
@@ -141,11 +141,11 @@ export default function AdminDashboard({
                       onClick={() => togglePlayerSelection(player._id.toString())}
                       className="relative p-4 rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/[0.04] active:scale-95"
                       style={{
-                        background: isSelected ? "rgba(224,48,48,0.12)" : "rgba(255,255,255,0.02)",
+                        background: isSelected ? "rgba(220,38,38,0.1)" : "rgba(255,255,255,0.02)",
                         border: isSelected
-                          ? "2px solid rgba(224,48,48,0.6)"
-                          : "1px solid #1f2d45",
-                        boxShadow: isSelected ? "0 0 20px rgba(224,48,48,0.25)" : "none",
+                          ? "1px solid rgba(220,38,38,0.5)"
+                          : "1px solid #1f1f1f",
+                        boxShadow: isSelected ? "0 0 20px rgba(220,38,38,0.2)" : "none",
                       }}
                     >
                       <div className="relative inline-block">
@@ -154,7 +154,7 @@ export default function AdminDashboard({
                           avatarUrl={avatarMap[player.username]}
                           size="xl"
                           showRing={isSelected}
-                          ringColor="#ef4444"
+                          ringColor="#dc2626"
                         />
                         <div className="absolute -bottom-5 -right-5 z-10 drop-shadow-md">
                           <RankBadge netBalance={net} showName={false} size="md" />
@@ -168,7 +168,7 @@ export default function AdminDashboard({
                       {isSelected && (
                         <span
                           className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white font-black"
-                          style={{ boxShadow: "0 0 8px rgba(224,48,48,0.8)" }}
+                          style={{ boxShadow: "0 0 8px rgba(220,38,38,0.8)" }}
                         >
                           ✓
                         </span>
@@ -214,9 +214,9 @@ export default function AdminDashboard({
           <div className="flex items-center gap-3">
             <div
               className="p-2.5 rounded-xl"
-              style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}
+              style={{ background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.15)" }}
             >
-              <UserPlus className="w-5 h-5 text-emerald-400" />
+              <UserPlus className="w-5 h-5 text-red-400" />
             </div>
             <div>
               <h2 className="text-lg font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>
@@ -274,7 +274,7 @@ export default function AdminDashboard({
             {createUserState?.success && (
               <div
                 className="text-xs font-bold p-2.5 rounded-xl text-center"
-                style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399" }}
+                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.3)", color: "#ffffff" }}
               >
                 {createUserState.success}
               </div>
@@ -293,6 +293,46 @@ export default function AdminDashboard({
               )}
             </button>
           </form>
+        </div>
+
+        {/* Global Statistics */}
+        <div className="game-card p-6 space-y-5 lg:col-span-2">
+          <div className="flex items-center gap-3">
+            <div
+              className="p-2.5 rounded-xl"
+              style={{ background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.15)" }}
+            >
+              <Users className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>
+                GLOBAL STATISTICS
+              </h2>
+              <p className="text-zinc-500 text-xs font-medium">Platform overview</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="stat-card text-center">
+              <span className="section-label block mb-2">Total Players</span>
+              <span className="text-3xl font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>{players.length}</span>
+            </div>
+            <div className="stat-card text-center">
+              <span className="section-label block mb-2">Top Winner</span>
+              <span className="text-xl font-black text-win truncate block px-2">
+                {sortedPlayers.length > 0 && balances[sortedPlayers[0].username] > 0 ? sortedPlayers[0].username : "None"}
+              </span>
+            </div>
+            <div className="stat-card text-center">
+              <span className="section-label block mb-2">Top Loser</span>
+              <span className="text-xl font-black text-loss truncate block px-2">
+                {sortedPlayers.length > 0 && balances[sortedPlayers[sortedPlayers.length - 1].username] < 0 ? sortedPlayers[sortedPlayers.length - 1].username : "None"}
+              </span>
+            </div>
+            <div className="stat-card text-center">
+              <span className="section-label block mb-2">Total Circulation</span>
+              <span className="text-2xl font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>{Object.values(balances).reduce((a,b) => a+b, 0)} TND</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
           public_id: `avatar_${session.userId}`,
           overwrite: true,
           transformation: [
-            { width: 200, height: 200, crop: "fill", gravity: "face" },
-            { quality: "auto", fetch_format: "auto" },
+            { width: 800, height: 800, crop: "fill", gravity: "face" },
+            { quality: 100, fetch_format: "png" },
           ],
         },
         (error, result) => {

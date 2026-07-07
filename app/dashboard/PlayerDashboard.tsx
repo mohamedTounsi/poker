@@ -64,8 +64,8 @@ export default function PlayerDashboard({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("File too large. Max 5MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("File too large. Max 10MB.");
       return;
     }
 
@@ -152,27 +152,34 @@ export default function PlayerDashboard({
         {/* Stats + Chart */}
         <div className="lg:col-span-2 space-y-4">
           {/* Stats row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {[
               {
                 label: "Net Balance",
                 value: formatTnd(myStats.netBalance),
                 icon: myStats.netBalance >= 0 ? TrendingUp : TrendingDown,
-                color: myStats.netBalance > 0 ? "#10b981" : myStats.netBalance < 0 ? "#ef4444" : "#6b7a99",
+                color: myStats.netBalance > 0 ? "#22c55e" : myStats.netBalance < 0 ? "#ef4444" : "#525252",
                 suit: "♥",
+              },
+              {
+                label: "Win Rate",
+                value: myStats.gamesPlayed > 0 ? `${Math.round((myStats.wins / myStats.gamesPlayed) * 100)}%` : "0%",
+                icon: Award,
+                color: "#22c55e",
+                suit: "♠",
               },
               {
                 label: "Games Played",
                 value: myStats.gamesPlayed,
                 icon: Award,
-                color: "#f5c518",
+                color: "#a3a3a3",
                 suit: "♠",
               },
               {
                 label: "Wins",
                 value: myStats.wins,
                 icon: TrendingUp,
-                color: "#10b981",
+                color: "#22c55e",
                 suit: "♦",
               },
               {
@@ -230,9 +237,9 @@ export default function PlayerDashboard({
         <div className="flex items-center gap-3">
           <div
             className="p-2.5 rounded-xl"
-            style={{ background: "rgba(245,197,24,0.1)", border: "1px solid rgba(245,197,24,0.2)" }}
+            style={{ background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.15)" }}
           >
-            <Award className="w-5 h-5 text-yellow-400" />
+            <Award className="w-5 h-5 text-red-500" />
           </div>
           <div>
             <h2 className="text-lg font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>
@@ -265,9 +272,9 @@ export default function PlayerDashboard({
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0"
                         style={{
-                          background: isPos ? "rgba(16,185,129,0.15)" : isNeg ? "rgba(224,48,48,0.15)" : "rgba(255,255,255,0.05)",
-                          color: isPos ? "#10b981" : isNeg ? "#ef4444" : "#6b7a99",
-                          border: `1px solid ${isPos ? "rgba(16,185,129,0.3)" : isNeg ? "rgba(224,48,48,0.3)" : "#1f2d45"}`,
+                          background: isPos ? "rgba(34,197,94,0.12)" : isNeg ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.03)",
+                          color: isPos ? "#22c55e" : isNeg ? "#ef4444" : "#525252",
+                          border: `1px solid ${isPos ? "rgba(34,197,94,0.25)" : isNeg ? "rgba(239,68,68,0.25)" : "#1f1f1f"}`,
                         }}
                       >
                         {isPos ? "W" : isNeg ? "L" : "D"}
@@ -288,7 +295,7 @@ export default function PlayerDashboard({
                     </div>
                     <div className="flex items-center gap-3">
                       <span
-                        className={`text-base font-black font-mono ${isPos ? "text-emerald-400" : isNeg ? "text-red-400" : "text-zinc-500"}`}
+                        className={`text-base font-black font-mono ${isPos ? "text-win" : isNeg ? "text-loss" : "text-neutral-600"}`}
                         style={{ fontFamily: "var(--font-orbitron)" }}
                       >
                         {isPos ? "+" : ""}{myScore} TND
@@ -303,7 +310,7 @@ export default function PlayerDashboard({
 
                   {isExpanded && (
                     <div className="match-card-body space-y-4">
-                      <div style={{ borderTop: "1px solid #1f2d45", marginBottom: "16px" }} />
+                      <div style={{ borderTop: "1px solid #1f1f1f", marginBottom: "16px" }} />
                       {/* All players scorecard */}
                       <div>
                         <p className="section-label mb-2">Scorecard</p>
@@ -376,9 +383,9 @@ export default function PlayerDashboard({
         <div className="flex items-center gap-3">
           <div
             className="p-2.5 rounded-xl"
-            style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)" }}
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}
           >
-            <Key className="w-5 h-5 text-blue-400" />
+            <Key className="w-5 h-5 text-white" />
           </div>
           <div>
             <h2 className="text-lg font-black text-white" style={{ fontFamily: "var(--font-orbitron)" }}>

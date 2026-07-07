@@ -40,7 +40,7 @@ export default function PlayerAvatar({
   size = "md",
   className = "",
   showRing = false,
-  ringColor = "#f5c518",
+  ringColor = "#fbbf24",
 }: PlayerAvatarProps) {
   const { px, text } = sizeMap[size];
   const color = getUserColor(username);
@@ -63,9 +63,11 @@ export default function PlayerAvatar({
           <Image
             src={avatarUrl}
             alt={username}
-            width={px}
-            height={px}
+            width={px * 2}
+            height={px * 2}
             className="w-full h-full object-cover"
+            quality={100}
+            unoptimized
           />
         ) : (
           <span

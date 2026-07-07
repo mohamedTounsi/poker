@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  AreaChart,
+  ComposedChart,
   Area,
   XAxis,
   YAxis,
@@ -55,21 +55,49 @@ export default function PerformanceChart({ data, height = 180 }: PerformanceChar
     );
   }
 
-  const allPositive = data.every((d) => d.balance >= 0);
-  const allNegative = data.every((d) => d.balance < 0);
-  const strokeColor = allPositive ? "#10b981" : allNegative ? "#ef4444" : "#f5c518";
-  const gradientId = allPositive ? "greenGrad" : allNegative ? "redGrad" : "goldGrad";
-  const gradientColor = allPositive ? "#10b981" : allNegative ? "#ef4444" : "#f5c518";
+  // Compute the min/max to anchor gradient stops correctly
+  const values = data.map((d) => d.balance);
+  const maxVal = Math.max(...values);
+  const minVal = Math.min(...values);
+  const range = maxVal - minVal || 1;
+
+  // What fraction of the chart height is the "zero line" from the top?
+  // If maxVal <= 0 → zero is at or above the top → full red
+  // If minVal >= 0 → zero is at or below the bottom → full green
+  const zeroFraction = maxVal <= 0 ? 0 : minVal >= 0 ? 1 : maxVal / range;
+  // zeroFraction = proportion of the chart that is ABOVE zero (green zone)
+  const greenStop = `${(zeroFraction * 100).toFixed(1)}%`;
+  const redStart = greenStop;
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
         <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={gradientColor} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={gradientColor} stopOpacity={0} />
+          {/* Green fill — covers area above zero */}
+          <linearGradient id="greenAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
+            <stop offset={greenStop} stopColor="#10b981" stopOpacity={0.08} />
+            <stop offset={redStart} stopColor="#10b981" stopOpacity={0} />
+            <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+          </linearGradient>
+
+          {/* Red fill — covers area below zero */}
+          <linearGradient id="redAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ef4444" stopOpacity={0} />
+            <stop offset={greenStop} stopColor="#ef4444" stopOpacity={0} />
+            <stop offset={redStart} stopColor="#ef4444" stopOpacity={0.08} />
+            <stop offset="100%" stopColor="#ef4444" stopOpacity={0.35} />
+          </linearGradient>
+
+          {/* Stroke gradient: green above zero, red below */}
+          <linearGradient id="strokeGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" />
+            <stop offset={greenStop} stopColor="#10b981" />
+            <stop offset={redStart} stopColor="#ef4444" />
+            <stop offset="100%" stopColor="#ef4444" />
           </linearGradient>
         </defs>
+
         <CartesianGrid strokeDasharray="3 3" stroke="#1f2d45" vertical={false} />
         <XAxis
           dataKey="label"
@@ -84,16 +112,60 @@ export default function PerformanceChart({ data, height = 180 }: PerformanceChar
         />
         <Tooltip content={<CustomTooltip />} />
         <ReferenceLine y={0} stroke="#2a3f60" strokeDasharray="4 2" />
+
+        {/* Green fill layer (above zero) */}
         <Area
           type="monotone"
           dataKey="balance"
-          stroke={strokeColor}
-          strokeWidth={2.5}
-          fill={`url(#${gradientId})`}
-          dot={{ r: 3, fill: strokeColor, strokeWidth: 0 }}
-          activeDot={{ r: 5, fill: strokeColor, strokeWidth: 2, stroke: "#111827" }}
+          stroke="none"
+          fill="url(#greenAreaGrad)"
+          dot={false}
+          activeDot={false}
+          legendType="none"
+          baseLine={0}
         />
-      </AreaChart>
+
+        {/* Red fill layer (below zero) */}
+        <Area
+          type="monotone"
+          dataKey="balance"
+          stroke="none"
+          fill="url(#redAreaGrad)"
+          dot={false}
+          activeDot={false}
+          legendType="none"
+          baseLine={0}
+        />
+
+        {/* Stroke layer with gradient color */}
+        <Area
+          type="monotone"
+          dataKey="balance"
+          stroke="url(#strokeGrad)"
+          strokeWidth={2.5}
+          fill="transparent"
+          dot={(props: any) => {
+            const { cx, cy, payload } = props;
+            const color = payload.balance >= 0 ? "#10b981" : "#ef4444";
+            return <circle key={`dot-${cx}-${cy}`} cx={cx} cy={cy} r={3} fill={color} />;
+          }}
+          activeDot={(props: any) => {
+            const { cx, cy, payload } = props;
+            const color = payload.balance >= 0 ? "#10b981" : "#ef4444";
+            return (
+              <circle
+                key={`adot-${cx}-${cy}`}
+                cx={cx}
+                cy={cy}
+                r={5}
+                fill={color}
+                stroke="#111827"
+                strokeWidth={2}
+              />
+            );
+          }}
+        />
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }
