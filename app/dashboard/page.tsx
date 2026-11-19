@@ -16,105 +16,103 @@ export default async function DashboardPage() {
 
   await connectToDatabase();
 
-  let players: any[] = [];
-  const balances: Record<string, number> = {};
-  let activeGame: any = null;
-  let historyGames: any[] = [];
-  const avatarMap: Record<string, string | null> = {};
+  // Fetch all players
+  const users = await User.find({ role: "player" }).sort({ username: 1 }).lean();
+  const players = JSON.parse(JSON.stringify(users));
 
-  // Player Dashboard Data
+  const avatarMap: Record<string, string | null> = {};
+  players.forEach((p: any) => {
+    avatarMap[p.username] = p.avatarUrl || null;
+  });
+
+  // Fetch active game if any
+  const active = await Game.findOne({ status: "active" }).lean();
+  const activeGame = active ? JSON.parse(JSON.stringify(active)) : null;
+
+  // Fetch completed games
+  const completed = await Game.find({ status: "completed" }).sort({ date: -1 }).lean();
+  const historyGames = JSON.parse(JSON.stringify(completed));
+
+  // Compute global balances
+  const balances: Record<string, number> = {};
+  const gamesCount: Record<string, number> = {};
+  players.forEach((p: any) => {
+    balances[p.username] = 0;
+    gamesCount[p.username] = 0;
+  });
+
+  historyGames.forEach((game: any) => {
+    game.players.forEach((p: any) => {
+      balances[p.username] = (balances[p.username] || 0) + p.score;
+      gamesCount[p.username] = (gamesCount[p.username] || 0) + 1;
+    });
+  });
+
+  // Player Dashboard specific metrics
+  let myUser: any = null;
   let myGames: any[] = [];
   const myStats = {
     netBalance: 0,
     gamesPlayed: 0,
     wins: 0,
     losses: 0,
+    bestWin: 0,
+    worstLoss: 0,
+    rebuys: 0,
   };
-  let myUser: any = null;
-  let navNetBalance = 0;
 
-  if (currentUser.role === "admin") {
-    const users = await User.find({ role: "player" }).sort({ username: 1 });
-    players = JSON.parse(JSON.stringify(users));
-
-    // Build avatar map
-    players.forEach((p) => {
-      avatarMap[p.username] = p.avatarUrl || null;
-    });
-
-    const active = await Game.findOne({ status: "active" });
-    activeGame = active ? JSON.parse(JSON.stringify(active)) : null;
-
-    const completed = await Game.find({ status: "completed" }).sort({ date: -1 });
-    historyGames = JSON.parse(JSON.stringify(completed));
-
-    players.forEach((p) => { balances[p.username] = 0; });
-    historyGames.forEach((game) => {
-      game.players.forEach((p: any) => {
-        if (balances[p.username] !== undefined) {
-          balances[p.username] += p.score;
-        } else {
-          balances[p.username] = p.score;
-        }
-      });
-    });
-  } else {
-    // Fetch current player's full user doc
+  if (currentUser.role === "player") {
     myUser = await User.findById(currentUser.userId).lean();
-    myUser = JSON.parse(JSON.stringify(myUser));
+    myUser = myUser ? JSON.parse(JSON.stringify(myUser)) : null;
 
-    const completed = await Game.find({
-      status: "completed",
-      "players.username": currentUser.username,
-    }).sort({ date: -1 });
-
-    myGames = JSON.parse(JSON.stringify(completed));
+    myGames = historyGames.filter((g: any) =>
+      g.players.some((p: any) => p.username === currentUser.username)
+    );
 
     myStats.gamesPlayed = myGames.length;
-    myGames.forEach((game) => {
-      const entry = game.players.find((p: any) => p.username === currentUser.username);
+    myStats.netBalance = balances[currentUser.username] || 0;
+
+    myGames.forEach((g: any) => {
+      const entry = g.players.find((p: any) => p.username === currentUser.username);
       if (entry) {
-        myStats.netBalance += entry.score;
         if (entry.score > 0) myStats.wins += 1;
-        else if (entry.score < 0) myStats.losses += 1;
+        if (entry.score < 0) myStats.losses += 1;
+        if (entry.score > myStats.bestWin) myStats.bestWin = entry.score;
+        if (entry.score < myStats.worstLoss) myStats.worstLoss = entry.score;
+        if (entry.rebuys) myStats.rebuys += entry.rebuys;
       }
     });
-    navNetBalance = myStats.netBalance;
+  } else {
+    // Admin user doc
+    const adminDoc = await User.findById(currentUser.userId).lean();
+    myUser = adminDoc ? JSON.parse(JSON.stringify(adminDoc)) : null;
   }
+
+  // Sorted players for Top 3 podium
+  const sortedPlayers = [...players].sort(
+    (a, b) => (balances[b.username] || 0) - (balances[a.username] || 0)
+  );
 
   const navUser = {
     username: currentUser.username,
     role: currentUser.role,
     avatarUrl: myUser?.avatarUrl || null,
-    netBalance: navNetBalance,
+    netBalance: balances[currentUser.username] || 0,
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)]">
+    <div className="min-h-screen flex flex-col lounge-bg">
       <Navbar user={navUser} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1
-            className="text-2xl sm:text-3xl font-black text-white tracking-wider"
-            style={{ fontFamily: "var(--font-orbitron)" }}
-          >
-            {currentUser.role === "admin" ? "COMMAND CENTER" : "MY PROFILE"}
-          </h1>
-          <p className="text-zinc-500 text-sm mt-1.5 font-medium" style={{ fontFamily: "var(--font-rajdhani)" }}>
-            {currentUser.role === "admin"
-              ? "Manage players, start games, and view global standings"
-              : `Welcome back, ${currentUser.username}! Here's your poker profile.`}
-          </p>
-        </div>
-
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-12">
         {currentUser.role === "admin" ? (
           <AdminDashboard
             players={players}
             balances={balances}
             activeGame={activeGame}
             avatarMap={avatarMap}
+            sortedPlayers={sortedPlayers}
+            historyGames={historyGames}
           />
         ) : (
           <PlayerDashboard
@@ -122,6 +120,10 @@ export default async function DashboardPage() {
             myUser={myUser}
             myGames={myGames}
             myStats={myStats}
+            activeGame={activeGame}
+            topPlayers={sortedPlayers.slice(0, 3)}
+            balances={balances}
+            avatarMap={avatarMap}
           />
         )}
       </main>

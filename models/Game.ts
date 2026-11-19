@@ -4,13 +4,26 @@ export interface IGamePlayer {
   userId: mongoose.Types.ObjectId;
   username: string;
   score: number; // In TND, can be positive or negative
+  rebuys?: number; // Number of rebuys in this game session
+  rebuyTotal?: number; // Total amount rebought in TND
 }
 
 export interface IGameTransaction {
-  fromUser: string; // Username of lender (gets +score)
-  toUser: string;   // Username of borrower (gets -score)
-  amount: number;   // Amount borrowed in TND
+  fromUser: string; // Username of lender/source
+  toUser: string;   // Username of borrower/destination
+  amount: number;   // Amount in TND
+  type?: "transfer" | "rebuy" | "adjustment";
   timestamp: Date;
+}
+
+export interface IGameAction {
+  id: string;
+  type: "score" | "rebuy" | "transfer" | "decrease_all";
+  description: string;
+  timestamp: Date;
+  stateSnapshot?: {
+    players: Array<{ userId: string; username: string; score: number; rebuys?: number }>;
+  };
 }
 
 export interface IGame extends Document {
@@ -18,6 +31,8 @@ export interface IGame extends Document {
   date: Date;
   players: IGamePlayer[];
   transactions: IGameTransaction[];
+  actions?: IGameAction[];
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +51,14 @@ const GamePlayerSchema = new Schema({
     type: Number,
     default: 0,
   },
+  rebuys: {
+    type: Number,
+    default: 0,
+  },
+  rebuyTotal: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const GameTransactionSchema = new Schema({
@@ -51,9 +74,37 @@ const GameTransactionSchema = new Schema({
     type: Number,
     required: true,
   },
+  type: {
+    type: String,
+    enum: ["transfer", "rebuy", "adjustment"],
+    default: "transfer",
+  },
   timestamp: {
     type: Date,
     default: Date.now,
+  },
+});
+
+const GameActionSchema = new Schema({
+  id: {
+    type: String,
+    required: true,
+  },
+  type: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+  stateSnapshot: {
+    type: Schema.Types.Mixed,
+    default: null,
   },
 });
 
@@ -70,6 +121,11 @@ const GameSchema: Schema = new Schema(
     },
     players: [GamePlayerSchema],
     transactions: [GameTransactionSchema],
+    actions: [GameActionSchema],
+    notes: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

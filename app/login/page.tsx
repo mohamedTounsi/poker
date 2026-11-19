@@ -1,179 +1,215 @@
 "use client";
 
-import { useActionState } from "react";
-import { loginAction } from "../actions";
-import { Loader2 } from "lucide-react";
+import { useState, useActionState } from "react";
+import Image from "next/image";
+import { loginAction, signUpAction } from "../actions";
+import { Loader2, Spade, User, Lock, ArrowRight, Shield } from "lucide-react";
 
 export default function LoginPage() {
-  const [state, formAction, isPending] = useActionState(loginAction, null);
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [loginState, loginFormAction, isLoginPending] = useActionState(loginAction, null);
+  const [signupState, signupFormAction, isSignupPending] = useActionState(signUpAction, null);
+  const [logoError, setLogoError] = useState(false);
+
+  const isPending = isLoginPending || isSignupPending;
 
   return (
-    <div
-      className="flex flex-col flex-1 items-center justify-center min-h-screen p-4 relative overflow-hidden"
-      style={{ background: "#0a0e1a" }}
-    >
-      {/* Animated background suits */}
+    <div className="flex flex-col flex-1 items-center justify-center min-h-screen p-4 relative overflow-hidden lounge-bg">
+      {/* Background card suits watermark */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-        <div className="absolute top-8 left-8 text-[120px] opacity-[0.04] text-white suit-pulse">♠</div>
-        <div className="absolute bottom-8 right-8 text-[120px] opacity-[0.04] text-red-500 suit-pulse" style={{ animationDelay: "2s" }}>♦</div>
-        <div className="absolute top-1/3 right-1/5 text-[120px] opacity-[0.04] text-red-400 suit-pulse" style={{ animationDelay: "4s" }}>♥</div>
-        <div className="absolute bottom-1/3 left-1/5 text-[120px] opacity-[0.04] text-white suit-pulse" style={{ animationDelay: "6s" }}>♣</div>
-        {/* Grid lines */}
-        <div
-          className="absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage: "linear-gradient(#3d5a80 1px, transparent 1px), linear-gradient(90deg, #3d5a80 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-          }}
-        />
+        <div className="absolute top-12 left-12 text-[140px] opacity-[0.03] text-white">♠</div>
+        <div className="absolute bottom-12 right-12 text-[140px] opacity-[0.04] text-red-600">♦</div>
+        <div className="absolute top-1/3 right-1/4 text-[140px] opacity-[0.04] text-red-600">♥</div>
+        <div className="absolute bottom-1/3 left-1/4 text-[140px] opacity-[0.03] text-white">♣</div>
       </div>
 
-      {/* Glow blob */}
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, rgba(224,48,48,0.06) 0%, transparent 70%)",
-        }}
-      />
-
-      {/* Card */}
-      <div
-        className="w-full max-w-md relative z-10 card-deal"
-        style={{
-          background: "rgba(17,24,39,0.9)",
-          border: "1px solid #1f2d45",
-          borderRadius: "20px",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03)",
-          backdropFilter: "blur(20px)",
-        }}
-      >
-        {/* Top corner decorations */}
-        <div className="absolute top-4 left-4 text-red-500 flex flex-col items-center leading-none select-none">
-          <span className="text-sm font-black" style={{ fontFamily: "var(--font-orbitron)" }}>A</span>
-          <span className="text-lg leading-none">♥</span>
-        </div>
-        <div className="absolute bottom-4 right-4 text-red-500 flex flex-col items-center leading-none select-none rotate-180">
-          <span className="text-sm font-black" style={{ fontFamily: "var(--font-orbitron)" }}>A</span>
-          <span className="text-lg leading-none">♥</span>
-        </div>
-
-        <div className="p-8 space-y-7">
-          {/* Logo */}
-          <div className="flex flex-col items-center gap-4">
-            <div
-              className="p-4 rounded-2xl"
-              style={{
-                background: "rgba(224,48,48,0.12)",
-                border: "1px solid rgba(224,48,48,0.35)",
-                boxShadow: "0 0 30px rgba(224,48,48,0.2)",
-              }}
-            >
-              <span className="text-4xl">♠</span>
-            </div>
-            <div className="text-center">
-              <h1
-                className="text-3xl font-black text-white tracking-wider"
-                style={{ fontFamily: "var(--font-orbitron)" }}
-              >
-                POKER<span className="text-red-400">ZONE</span>
-              </h1>
-              <p className="text-zinc-500 text-sm mt-1.5 font-medium" style={{ fontFamily: "var(--font-rajdhani)" }}>
-                Track · Rank · Dominate
-              </p>
-            </div>
+      {/* Main Auth Card */}
+      <div className="w-full max-w-md relative z-10 rounded-3xl bg-zinc-950/95 border border-red-900/40 p-6 sm:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.9)] backdrop-blur-2xl space-y-6">
+        
+        {/* Logo & Headline */}
+        <div className="flex flex-col items-center text-center space-y-3">
+          <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-zinc-900 via-black to-red-950 border border-red-600/50 p-1 flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.4)]">
+            {!logoError ? (
+              <Image
+                src="/pokerfrerlogo.png"
+                alt="POKER FRERE Logo"
+                width={56}
+                height={56}
+                className="w-full h-full object-contain rounded-xl"
+                onError={() => setLogoError(true)}
+                unoptimized
+              />
+            ) : (
+              <Spade className="w-9 h-9 text-red-500 fill-red-500" />
+            )}
           </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+              POKER <span className="text-red-600 drop-shadow-[0_0_12px_rgba(239,68,68,0.7)]">FRERE</span>
+            </h1>
+            <p className="text-xs text-zinc-400 font-semibold tracking-wider mt-0.5 uppercase">
+              High Stakes Poker Lounge & Financial Ledger
+            </p>
+          </div>
+        </div>
 
-          {/* Form */}
-          <form action={formAction} className="space-y-4">
+        {/* Mode Switcher Tabs */}
+        <div className="grid grid-cols-2 p-1 rounded-2xl bg-black border border-zinc-800">
+          <button
+            type="button"
+            onClick={() => setMode("login")}
+            className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+              mode === "login"
+                ? "bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("signup")}
+            className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+              mode === "signup"
+                ? "bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Create Account
+          </button>
+        </div>
+
+        {/* Form Container */}
+        {mode === "login" ? (
+          <form action={loginFormAction} className="space-y-4">
             <div>
-              <label
-                className="block text-xs font-bold tracking-widest uppercase mb-2"
-                style={{ color: "#6b7a99", fontFamily: "var(--font-rajdhani)" }}
-                htmlFor="username"
-              >
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
                 Username
               </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                autoComplete="username"
-                placeholder="Enter your username"
-                className="game-input w-full px-4 py-3 text-sm font-semibold"
-                style={{ fontFamily: "var(--font-rajdhani)" }}
-              />
+              <div className="relative">
+                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  name="username"
+                  type="text"
+                  required
+                  placeholder="Enter your username"
+                  className="w-full bg-black border border-zinc-800 focus:border-red-600 pl-10 pr-4 py-3 rounded-xl text-xs font-semibold text-white outline-none transition-colors"
+                />
+              </div>
             </div>
 
             <div>
-              <label
-                className="block text-xs font-bold tracking-widest uppercase mb-2"
-                style={{ color: "#6b7a99", fontFamily: "var(--font-rajdhani)" }}
-                htmlFor="password"
-              >
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                className="game-input w-full px-4 py-3 text-sm font-semibold"
-                style={{ fontFamily: "var(--font-rajdhani)" }}
-              />
+              <div className="relative">
+                <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  className="w-full bg-black border border-zinc-800 focus:border-red-600 pl-10 pr-4 py-3 rounded-xl text-xs font-semibold text-white outline-none transition-colors"
+                />
+              </div>
             </div>
 
-            {state?.error && (
-              <div
-                className="text-sm font-bold p-3 rounded-xl text-center"
-                style={{
-                  background: "rgba(224,48,48,0.1)",
-                  border: "1px solid rgba(224,48,48,0.3)",
-                  color: "#f87171",
-                  fontFamily: "var(--font-rajdhani)",
-                }}
-              >
-                ⚠ {state.error}
+            {loginState?.error && (
+              <div className="p-3 rounded-xl bg-red-950/60 border border-red-600/40 text-red-400 text-xs font-bold">
+                {loginState.error}
               </div>
             )}
 
             <button
               type="submit"
               disabled={isPending}
-              className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 text-sm tracking-widest"
-              style={{ fontFamily: "var(--font-orbitron)", marginTop: "8px" }}
+              className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
-              {isPending ? (
+              {isLoginPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  SIGNING IN...
+                  Entering Club...
                 </>
               ) : (
-                "ENTER THE GAME"
+                <>
+                  Enter Lounge <ArrowRight className="w-4 h-4" />
+                </>
               )}
             </button>
           </form>
+        ) : (
+          <form action={signupFormAction} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                Username
+              </label>
+              <div className="relative">
+                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  name="username"
+                  type="text"
+                  required
+                  placeholder="Choose your poker handle"
+                  className="w-full bg-black border border-zinc-800 focus:border-red-600 pl-10 pr-4 py-3 rounded-xl text-xs font-semibold text-white outline-none transition-colors"
+                />
+              </div>
+            </div>
 
-          {/* Admin hint */}
-          <div
-            className="text-center p-3 rounded-xl"
-            style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid #1f2d45",
-              fontFamily: "var(--font-rajdhani)",
-            }}
-          >
-            <span className="text-xs text-red-400 font-bold block mb-1">First time?</span>
-            <span className="text-xs text-zinc-500 font-medium">
-              Use{" "}
-              <code className="text-zinc-300 bg-zinc-800 px-1.5 py-0.5 rounded font-bold">admin</code>
-              {" / "}
-              <code className="text-zinc-300 bg-zinc-800 px-1.5 py-0.5 rounded font-bold">adminpassword123</code>
-            </span>
-          </div>
-        </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  placeholder="Create a secure password"
+                  className="w-full bg-black border border-zinc-800 focus:border-red-600 pl-10 pr-4 py-3 rounded-xl text-xs font-semibold text-white outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                Invite Code
+              </label>
+              <div className="relative">
+                <Shield className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  name="inviteCode"
+                  type="text"
+                  placeholder="Optional club invite code"
+                  className="w-full bg-black border border-zinc-800 focus:border-red-600 pl-10 pr-4 py-3 rounded-xl text-xs font-semibold text-white outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {signupState?.error && (
+              <div className="p-3 rounded-xl bg-red-950/60 border border-red-600/40 text-red-400 text-xs font-bold">
+                {signupState.error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isPending}
+              className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(220,38,38,0.4)] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {isSignupPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating Seat...
+                </>
+              ) : (
+                <>
+                  Claim Your Seat <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

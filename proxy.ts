@@ -11,14 +11,19 @@ export async function proxy(request: NextRequest) {
   // Read the poker_session cookie
   const token = request.cookies.get("poker_session")?.value;
 
-  // Define public paths
+  // Allow server actions and internal RSC requests through without proxy redirect
+  const isServerAction = request.headers.has("next-action");
+  const isRSC = request.headers.has("rsc");
+  if (isServerAction || isRSC) {
+    return NextResponse.next();
+  }
+
+  // Define public paths and static assets
   const isLoginPage = pathname === "/login";
   const isPublicAsset =
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") || 
-    pathname.includes("favicon.ico") ||
-    pathname.startsWith("/vercel.svg") ||
-    pathname.startsWith("/next.svg");
+    /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2)$/i.test(pathname);
 
   if (isPublicAsset) {
     return NextResponse.next();
@@ -65,5 +70,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2)).*)",
+  ],
 };

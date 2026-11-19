@@ -53,22 +53,18 @@ export default async function HistoryPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#0a0e1a" }}>
+    <div className="min-h-screen flex flex-col lounge-bg">
       <Navbar user={navUser} />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1
-            className="text-2xl sm:text-3xl font-black text-white tracking-wider"
-            style={{ fontFamily: "var(--font-orbitron)" }}
-          >
-            MATCH HISTORY
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-12 space-y-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-zinc-100 uppercase tracking-tight flex items-center gap-2.5">
+            Match History & Ledgers
           </h1>
-          <p className="text-zinc-500 text-sm mt-1.5 font-medium" style={{ fontFamily: "var(--font-rajdhani)" }}>
+          <p className="text-zinc-400 text-xs sm:text-sm font-medium mt-1">
             {currentUser.role === "admin"
-              ? `All ${games.length} completed game sessions`
-              : `Your ${games.length} completed games — click to expand`}
+              ? `All ${games.length} completed game sessions with audit trails`
+              : `Your ${games.length} completed matches — click to expand scorecards`}
           </p>
         </div>
 

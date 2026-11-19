@@ -5,12 +5,15 @@ export interface IUser extends Document {
   password?: string;
   role: "admin" | "player";
   avatarUrl?: string;
+  bio?: string;
+  themePreference?: "dark" | "light";
   medals: {
     gold: number;
     silver: number;
     bronze: number;
   };
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserSchema: Schema = new Schema(
@@ -35,6 +38,16 @@ const UserSchema: Schema = new Schema(
       type: String,
       default: null,
     },
+    bio: {
+      type: String,
+      default: "",
+      maxlength: 250,
+    },
+    themePreference: {
+      type: String,
+      enum: ["dark", "light"],
+      default: "dark",
+    },
     medals: {
       gold: { type: Number, default: 0 },
       silver: { type: Number, default: 0 },
@@ -46,5 +59,4 @@ const UserSchema: Schema = new Schema(
   }
 );
 
-// Prevent compiling model query multiple times on hot-reloading
 export default mongoose.models.User || mongoose.model<IUser>("User", UserSchema);

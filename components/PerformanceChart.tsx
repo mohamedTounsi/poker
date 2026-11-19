@@ -36,7 +36,7 @@ const CustomTooltip = ({ active, payload }: any) => {
       }}
     >
       <div className="text-zinc-400 text-xs mb-1">{payload[0]?.payload?.date}</div>
-      <div className={isPos ? "text-emerald-400" : "text-red-400"}>
+      <div className={isPos ? "text-white" : "text-red-400"}>
         {isPos ? "+" : ""}{val} TND
       </div>
     </div>
