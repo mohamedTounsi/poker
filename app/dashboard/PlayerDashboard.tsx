@@ -138,19 +138,7 @@ export default function PlayerDashboard({
           </div>
         </div>
 
-        {/* Big Balance Tag: Winning Green, Losing Red, Half in Parentheses */}
-        <div className="z-10 p-5 rounded-2xl bg-black/80 border border-zinc-800 text-center min-w-[200px]">
-          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block mb-1">
-            Career Net Profit
-          </span>
-          <span
-            className={`text-2xl sm:text-3xl font-mono font-black ${
-              isWin ? "text-emerald-400" : isLoss ? "text-red-500" : "text-white"
-            }`}
-          >
-            {formatTnd(myStats.netBalance, true)}
-          </span>
-        </div>
+        
       </div>
 
       {/* Stats Cards Row */}

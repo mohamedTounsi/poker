@@ -101,7 +101,7 @@ export default function PlayersDirectoryClient({
           No matching players found.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {filtered.map((player) => {
             const net = balances[player.username] || 0;
             const games = gamesCounts[player.username] || 0;
@@ -139,15 +139,7 @@ export default function PlayersDirectoryClient({
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span
-                      className={`font-mono font-black text-sm sm:text-base ${
-                        isWin ? "text-emerald-400" : isLoss ? "text-red-500" : "text-white"
-                      }`}
-                    >
-                      {formatTnd(net, true)}
-                    </span>
-                  </div>
+
                 </div>
 
                 {player.bio && (

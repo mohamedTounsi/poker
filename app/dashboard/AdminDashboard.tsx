@@ -177,32 +177,31 @@ export default function AdminDashboard({
             />
           </div>
 
-          {/* Players Selection Grid — 2 columns on phone! */}
+          {/* Players Selection Grid — 3 in line, only icon/avatar, no carousel */}
           {players.length === 0 ? (
             <div className="p-10 rounded-2xl border border-dashed border-zinc-800 text-center text-xs text-zinc-500 font-bold uppercase">
               No players found. Create player accounts below.
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3 max-h-[420px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5 sm:gap-3">
               {filteredPlayers.map((player) => {
                 const isSelected = selectedPlayers.includes(player._id.toString());
                 const net = balances[player.username] || 0;
-                const isWin = net > 0;
-                const isLoss = net < 0;
 
                 return (
                   <button
                     key={player._id}
                     type="button"
                     onClick={() => togglePlayerSelection(player._id.toString())}
-                    className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 relative cursor-pointer active:scale-95 ${
+                    title={player.username}
+                    className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center relative cursor-pointer active:scale-95 ${
                       isSelected
                         ? "bg-red-950/40 border-red-500 shadow-[0_0_20px_rgba(220,38,38,0.35)]"
                         : "bg-black/80 border-zinc-800 hover:border-zinc-700"
                     }`}
                   >
                     {isSelected && (
-                      <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center text-[10px] font-black shadow-md">
+                      <span className="absolute top-1.5 right-1.5 z-30 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center text-[10px] font-black shadow-md">
                         ✓
                       </span>
                     )}
@@ -217,19 +216,10 @@ export default function AdminDashboard({
                       rankScore={net}
                     />
 
-                    <div className="text-center w-full px-1">
-                      <span className="block text-xs font-black text-white uppercase truncate">
-                        {player.username}
-                      </span>
-                      {/* Winning green, losing red, half in parentheses */}
-                      <span
-                        className={`text-[10px] font-mono font-bold block mt-0.5 ${
-                          isWin ? "text-emerald-400" : isLoss ? "text-red-500" : "text-zinc-400"
-                        }`}
-                      >
-                        {formatTnd(net, true)}
-                      </span>
-                    </div>
+                    {/* ONLY THE NAME (NO MONEY) */}
+                    <span className="block text-xs font-black text-white uppercase truncate text-center w-full mt-1">
+                      {player.username}
+                    </span>
                   </button>
                 );
               })}

@@ -61,7 +61,7 @@ html:not(.dark) {
   box-sizing: border-box;
 }
 
-html, body {
+html, body { overflow-x: hidden;
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-game);

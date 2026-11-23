@@ -26,7 +26,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-black text-white selection:bg-red-600 selection:text-white">
+      <body className="min-h-full flex flex-col bg-black text-white overflow-x-hidden selection:bg-red-600 selection:text-white">
         <ThemeInitializer />
         {children}
       </body>
